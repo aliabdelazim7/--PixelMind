@@ -1,13 +1,11 @@
 // دالة doGet لتشغيل وعرض واجهة المستخدم الرسومية الخاصة بالـ CRM أو إرجاع البيانات بصيغة JSON
 function doGet(e) {
-  // إذا كان الطلب استدعاء للبيانات عبر الـ API
   if (e && e.parameter && e.parameter.action === 'getLeads') {
     var data = getLeads();
     return ContentService.createTextOutput(JSON.stringify(data))
         .setMimeType(ContentService.MimeType.JSON);
   }
   
-  // الوضع الافتراضي: عرض صفحة الويب للـ CRM
   return HtmlService.createHtmlOutputFromFile('Index')
       .setTitle('ليد فلو - نظام إدارة العملاء البسيط')
       .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
@@ -41,6 +39,10 @@ function doPost(e) {
 // دالة لجلب العملاء من جدول البيانات الحالي (Google Sheet)
 function getLeads() {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  
+  // التحقق المباشر وإنشاء العناوين وتنسيق الشيت تلقائياً إذا كان فارغاً
+  checkAndInitHeaders(sheet);
+  
   var data = sheet.getDataRange().getValues();
   if (data.length <= 1) return []; // إذا كان الجدول فارغاً أو يحتوي فقط على العناوين
   
@@ -63,6 +65,9 @@ function getLeads() {
 function addOrUpdateLead(lead) {
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   
+  // التحقق المباشر وإنشاء العناوين وتنسيق الشيت تلقائياً إذا كان فارغاً
+  checkAndInitHeaders(sheet);
+  
   if (lead.rowIndex) {
     var rowNum = parseInt(lead.rowIndex);
     sheet.getRange(rowNum, 1).setValue(lead.fullname);
@@ -83,4 +88,27 @@ function deleteLead(rowIndex) {
   sheet.deleteRow(rowNum);
   
   return getLeads(); 
+}
+
+// دالة المساعدة للتحقق وإنشاء العناوين تلقائياً وتنسيق جدول البيانات
+function checkAndInitHeaders(sheet) {
+  var lastRow = sheet.getLastRow();
+  
+  // إذا كان الشيت فارغاً تماماً
+  if (lastRow === 0 || (lastRow === 1 && sheet.getRange(1, 1).getValue() === "")) {
+    // كتابة العناوين باللغة العربية في الصف الأول
+    sheet.getRange(1, 1, 1, 4).setValues([["الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة"]]);
+    
+    // تنسيق احترافي للصف الأول (عريض، خلفية رمادية فاتحة، محاذاة في المنتصف)
+    var headerRange = sheet.getRange(1, 1, 1, 4);
+    headerRange.setFontWeight("bold")
+               .setBackground("#efefef")
+               .setHorizontalAlignment("center");
+               
+    // تجميد الصف الأول ليبقى ظاهراً أثناء التمرير
+    sheet.setFrozenRows(1);
+    
+    // ضبط تلقائي لعرض الأعمدة لتناسب حجم النصوص
+    sheet.autoResizeColumns(1, 4);
+  }
 }
