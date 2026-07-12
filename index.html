@@ -908,23 +908,6 @@
             submitBtn.innerText = "⏳ جاري الحفظ...";
         }
 
-        const newLead = {
-            fullname: document.getElementById('lead-fullname').value,
-            phone: document.getElementById('lead-phone').value,
-            status: document.getElementById('lead-status').value
-        };
-
-    function saveLead(e) {
-        e.preventDefault();
-        const indexStr = document.getElementById('edit-lead-index').value;
-        
-        // جلب زر الحفظ وتعطيله لمنع التكرار (Double click prevention)
-        const submitBtn = e.target.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.disabled = true;
-            submitBtn.innerText = "⏳ جاري الحفظ...";
-        }
-
         const rawFullname = document.getElementById('lead-fullname').value;
         const rawPhone = document.getElementById('lead-phone').value;
         
