@@ -625,9 +625,14 @@
     }
 
     function calculateKPIs() {
-        const totalLeads = leads.length;
-        const won = leads.filter(l => l.status === 'Won').length;
-        const active = leads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(l.status)).length;
+        if (!Array.isArray(leads)) return;
+
+        // تصفية الصفوف لتجنب عد الأسطر الفارغة في شيت جوجل
+        const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+
+        const totalLeads = validLeads.length;
+        const won = validLeads.filter(l => String(l.status || "") === 'Won').length;
+        const active = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(String(l.status || ""))).length;
 
         const container = document.getElementById('kpi-grid');
         container.innerHTML = `
@@ -652,21 +657,35 @@
         const tbody = document.getElementById('leads-table-body');
         tbody.innerHTML = '';
 
+        if (!Array.isArray(leads)) {
+            console.error("Leads is not an array:", leads);
+            return;
+        }
+
         leads.forEach((l, index) => {
-            const matchQuery = l.fullname.toLowerCase().includes(query) || l.phone.includes(query);
-            const matchStatus = !statusFilter || l.status === statusFilter;
+            // تحويل كافة المدخلات إلى نصوص لمنع الـ Crash في المتصفح إذا كانت خلية الشيت رقماً أو فارغة
+            const fullnameStr = String(l.fullname || "").trim();
+            const phoneStr = String(l.phone || "").trim();
+            const statusStr = String(l.status || "").trim();
+            const createdAtStr = String(l.created_at || "").trim();
+
+            // تخطي السطور الفارغة تماماً
+            if (fullnameStr === "" && phoneStr === "") return;
+
+            const matchQuery = fullnameStr.toLowerCase().includes(query) || phoneStr.includes(query);
+            const matchStatus = !statusFilter || statusStr === statusFilter;
 
             if (matchQuery && matchStatus) {
-                const phoneClean = l.phone.replace(/[\+\s\-\(\)]/g, '');
+                const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
                 const waUrl = `https://wa.me/${phoneClean}`;
 
                 tbody.innerHTML += `
                     <tr>
-                        <td style="font-weight: 700;">${l.fullname}</td>
-                        <td style="direction: ltr; text-align: right;">${l.phone}</td>
+                        <td style="font-weight: 700;">${fullnameStr}</td>
+                        <td style="direction: ltr; text-align: right;">${phoneStr}</td>
                         <td><a href="${waUrl}" target="_blank" class="wa-link">📱 واتساب</a></td>
-                        <td><span class="badge ${STATUS_BADGES[l.status] || 'badge-newlead'}">${STATUS_LABELS[l.status] || l.status}</span></td>
-                        <td>${l.created_at}</td>
+                        <td><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${STATUS_LABELS[statusStr] || statusStr}</span></td>
+                        <td>${createdAtStr}</td>
                         <td>
                             <div class="action-row">
                                 <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditLeadModal(${index})">تعديل الحالة</button>
