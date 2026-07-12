@@ -410,6 +410,8 @@
 <body>
 
 <div class="container">
+    <!-- بنر التنبيه عند فشل الاتصال بقاعدة بيانات جوجل شيت -->
+    <div id="connection-error-banner" style="display:none; background-color:#ff5252; color:white; text-align:center; padding:10px 20px; font-weight:bold; font-size:0.9rem; border-radius:4px; margin-bottom:20px; font-family:'Cairo', sans-serif;"></div>
     <header>
         <div class="logo-section">
             <h1>ليد فلو</h1>
@@ -584,12 +586,24 @@
             fetch(webAppUrl + "?action=getLeads")
                 .then(res => res.json())
                 .then(data => {
+                    // إخفاء بنر الخطأ في حال نجاح الاتصال
+                    const banner = document.getElementById('connection-error-banner');
+                    if (banner) banner.style.display = "none";
+                    
                     leads = data;
                     calculateKPIs();
                     renderLeadsTable();
                 })
                 .catch(err => {
                     console.warn("تنبيه: فشل الاتصال بالـ API، سيتم تشغيل التخزين المحلي الاحتياطي:", err);
+                    
+                    // إظهار بنر التنبيه مع تفاصيل الخطأ لتسهيل التتبع والتشخيص
+                    const banner = document.getElementById('connection-error-banner');
+                    if (banner) {
+                        banner.style.display = "block";
+                        banner.innerText = "🚨 فشل الاتصال بقاعدة البيانات (جاري العرض من الذاكرة المؤقتة). تفاصيل الخطأ: " + err.message;
+                    }
+                    
                     if (!localStorage.getItem('meta_crm_leads_minimal')) {
                         localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(DEFAULT_LEADS));
                     }
