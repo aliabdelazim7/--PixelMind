@@ -69,6 +69,61 @@
             margin-top: 2px;
         }
 
+        /* مؤشر حالة الاتصال بقاعدة البيانات */
+        .db-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 8px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            font-family: var(--font-family);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-connecting {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+        .status-connecting .status-dot {
+            background-color: #888;
+            animation: pulse-dot 1.5s infinite ease-in-out;
+        }
+
+        .status-connected {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border-color: rgba(40, 167, 69, 0.2);
+        }
+        .status-connected .status-dot {
+            background-color: #28a745;
+        }
+
+        .status-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-color: rgba(220, 53, 69, 0.2);
+        }
+        .status-error .status-dot {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
         .btn {
             background-color: var(--accent-white);
             color: #000;
@@ -416,6 +471,10 @@
         <div class="logo-section">
             <h1>ليد فلو</h1>
             <p>نظام إدارة ومتابعة العملاء فائق البساطة</p>
+            <div id="db-status" class="db-status status-connecting">
+                <span class="status-dot"></span>
+                <span id="db-status-text">جاري الاتصال بقاعدة البيانات...</span>
+            </div>
         </div>
         <div class="header-actions">
             <button class="btn btn-secondary" onclick="resetDefaultData()">إعادة تعيين البيانات</button>
@@ -573,8 +632,19 @@
     // التحقق مما إذا كان التطبيق يعمل داخل بيئة Google Apps Script
     const isGoogleAppsScript = typeof google !== 'undefined' && google.script && google.script.run;
 
+    function updateDbStatus(statusClass, statusText) {
+        const dbStatusEl = document.getElementById('db-status');
+        const dbStatusTextEl = document.getElementById('db-status-text');
+        if (dbStatusEl && dbStatusTextEl) {
+            dbStatusEl.className = 'db-status ' + statusClass;
+            dbStatusTextEl.innerText = statusText;
+        }
+    }
+
     function initData() {
-        // إظهار مؤشر التحميل في الجدول عند الفتح
+        // تعيين حالة جاري الاتصال بقاعدة البيانات
+        updateDbStatus('status-connecting', 'جاري الاتصال بقاعدة البيانات...');
+
         const tbody = document.getElementById('leads-table-body');
         if (tbody) {
             tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري الاتصال وجلب البيانات من شيت جوجل...</td></tr>';
@@ -582,6 +652,7 @@
 
         if (isGoogleAppsScript) {
             google.script.run.withSuccessHandler(function(data) {
+                updateDbStatus('status-connected', 'متصل بـ Google Sheets');
                 leads = data;
                 calculateKPIs();
                 renderLeadsTable();
@@ -592,6 +663,9 @@
                 .then(data => {
                     const banner = document.getElementById('connection-error-banner');
                     if (banner) banner.style.display = "none";
+                    
+                    // تعيين حالة متصل بنجاح
+                    updateDbStatus('status-connected', 'متصل بـ Google Sheets');
                     
                     leads = data;
                     calculateKPIs();
@@ -605,6 +679,9 @@
                         banner.style.display = "block";
                         banner.innerText = "🚨 فشل الاتصال بقاعدة البيانات (جاري العرض من الذاكرة المؤقتة). تفاصيل الخطأ: " + err.message;
                     }
+                    
+                    // تعيين حالة غير متصل (أوفلاين)
+                    updateDbStatus('status-error', 'غير متصل (يعمل بالذاكرة المؤقتة)');
                     
                     if (!localStorage.getItem('meta_crm_leads_minimal')) {
                         localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(DEFAULT_LEADS));
