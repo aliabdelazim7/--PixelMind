@@ -1,6 +1,6 @@
 // ضع رابط شيت جوجل (Google Sheet URL) الخاص بك هنا للربط المضمون والسريع
 // مثال: "https://docs.google.com/spreadsheets/d/.../edit"
-const SPREADSHEET_URL = ""; 
+const SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1VdSlXUBJtpMqkuow4Fg98XGrVpwFhRMc_X9QvsI9H_s/edit"; 
 
 // دالة doGet لاستقبال طلبات جلب البيانات من Vercel أو الفتح المباشر
 function doGet(e) {
