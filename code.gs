@@ -2,7 +2,7 @@
 // مثال: "https://docs.google.com/spreadsheets/d/.../edit"
 const SPREADSHEET_URL = ""; 
 
-// دالة doGet لتشغيل وعرض واجهة المستخدم الرسومية الخاصة بالـ CRM أو إرجاع البيانات بصيغة JSON
+// دالة doGet لاستقبال طلبات جلب البيانات من Vercel أو الفتح المباشر
 function doGet(e) {
   if (e && e.parameter && e.parameter.action === 'getLeads') {
     var data = getLeads();
@@ -10,13 +10,12 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
   }
   
-  return HtmlService.createHtmlOutputFromFile('Index')
-      .setTitle('ليد فلو - نظام إدارة العملاء البسيط')
-      .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL)
-      .addMetaTag('viewport', 'width=device-width, initial-scale=1');
+  // رسالة تأكيدية بدلاً من تحميل ملف HTML خارجي
+  return ContentService.createTextOutput("ليد فلو API يعمل بنجاح! قاعدة البيانات متصلة ومستعدة لاستقبال البيانات من Vercel.")
+      .setMimeType(ContentService.MimeType.TEXT);
 }
 
-// دالة doPost لاستقبال الإضافات والتعديلات والحذف من خارج الشيت عبر الـ API
+// دالة doPost لاستقبال الإضافات والتعديلات والحذف من Vercel عبر الـ API
 function doPost(e) {
   try {
     var requestData = JSON.parse(e.postData.contents);
