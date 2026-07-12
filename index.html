@@ -574,19 +574,22 @@
     const isGoogleAppsScript = typeof google !== 'undefined' && google.script && google.script.run;
 
     function initData() {
+        // إظهار مؤشر التحميل في الجدول عند الفتح
+        const tbody = document.getElementById('leads-table-body');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري الاتصال وجلب البيانات من شيت جوجل...</td></tr>';
+        }
+
         if (isGoogleAppsScript) {
-            // جلب البيانات من شيت جوجل مباشرة داخل بيئة جوجل
             google.script.run.withSuccessHandler(function(data) {
                 leads = data;
                 calculateKPIs();
                 renderLeadsTable();
             }).getLeads();
         } else {
-            // جلب البيانات من الـ Web App الخاص بجوجل عبر الـ API للتشغيل الخارجي
             fetch(webAppUrl + "?action=getLeads")
                 .then(res => res.json())
                 .then(data => {
-                    // إخفاء بنر الخطأ في حال نجاح الاتصال
                     const banner = document.getElementById('connection-error-banner');
                     if (banner) banner.style.display = "none";
                     
@@ -597,7 +600,6 @@
                 .catch(err => {
                     console.warn("تنبيه: فشل الاتصال بالـ API، سيتم تشغيل التخزين المحلي الاحتياطي:", err);
                     
-                    // إظهار بنر التنبيه مع تفاصيل الخطأ لتسهيل التتبع والتشخيص
                     const banner = document.getElementById('connection-error-banner');
                     if (banner) {
                         banner.style.display = "block";
@@ -738,6 +740,13 @@
     function saveLead(e) {
         e.preventDefault();
         const indexStr = document.getElementById('edit-lead-index').value;
+        
+        // جلب زر الحفظ وتعطيله لمنع التكرار (Double click prevention)
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "⏳ جاري الحفظ...";
+        }
 
         const newLead = {
             fullname: document.getElementById('lead-fullname').value,
@@ -746,19 +755,21 @@
         };
 
         if (isGoogleAppsScript) {
-            // حفظ البيانات في شيت جوجل مباشرة داخل بيئة جوجل
             if (indexStr !== "") {
                 const idx = parseInt(indexStr);
                 newLead.rowIndex = leads[idx].rowIndex;
             }
             google.script.run.withSuccessHandler(function(updatedLeads) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "حفظ";
+                }
                 leads = updatedLeads;
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
             }).addOrUpdateLead(newLead);
         } else {
-            // إرسال البيانات للـ Web App الخاص بجوجل عبر الـ API
             if (indexStr !== "") {
                 const idx = parseInt(indexStr);
                 newLead.rowIndex = leads[idx].rowIndex;
@@ -773,6 +784,10 @@
             })
             .then(res => res.json())
             .then(updatedLeads => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "حفظ";
+                }
                 leads = updatedLeads;
                 calculateKPIs();
                 renderLeadsTable();
@@ -780,6 +795,10 @@
             })
             .catch(err => {
                 console.warn("تنبيه: فشل إرسال البيانات للـ API، سيتم الحفظ محلياً:", err);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "حفظ";
+                }
                 if (indexStr === "") {
                     newLead.created_at = new Date().toISOString().split('T')[0];
                     leads.push(newLead);
@@ -797,8 +816,13 @@
 
     function deleteLead(index) {
         if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
+            // إظهار تنبيه مؤقت للمستخدم أثناء المعالجة في جوجل
+            const tbody = document.getElementById('leads-table-body');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري معالجة حذف العميل من شيت جوجل...</td></tr>';
+            }
+
             if (isGoogleAppsScript) {
-                // حذف الصف من شيت جوجل مباشرة داخل بيئة جوجل
                 const rowIndex = leads[index].rowIndex;
                 google.script.run.withSuccessHandler(function(updatedLeads) {
                     leads = updatedLeads;
@@ -806,7 +830,6 @@
                     renderLeadsTable();
                 }).deleteLead(rowIndex);
             } else {
-                // حذف الصف عبر الـ Web App API الخارجي
                 const rowIndex = leads[index].rowIndex;
 
                 fetch(webAppUrl, {
