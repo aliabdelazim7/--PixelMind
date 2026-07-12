@@ -10,7 +10,6 @@ function doGet(e) {
         .setMimeType(ContentService.MimeType.JSON);
   }
   
-  // رسالة تأكيدية بدلاً من تحميل ملف HTML خارجي
   return ContentService.createTextOutput("ليد فلو API يعمل بنجاح! قاعدة البيانات متصلة ومستعدة لاستقبال البيانات من Vercel.")
       .setMimeType(ContentService.MimeType.TEXT);
 }
@@ -25,7 +24,7 @@ function doPost(e) {
     if (action === 'addOrUpdate') {
       result = addOrUpdateLead(requestData.lead);
     } else if (action === 'delete') {
-      result = deleteLead(requestData.rowIndex);
+      result = deleteLead(requestData.leadId);
     } else {
       result = { error: 'Action parameter invalid' };
     }
@@ -55,23 +54,24 @@ function getTargetSheet() {
 function getLeads() {
   try {
     var sheet = getTargetSheet();
-    
-    // التحقق المباشر وإنشاء العناوين وتنسيق الشيت تلقائياً إذا كان فارغاً
     checkAndInitHeaders(sheet);
     
     var data = sheet.getDataRange().getValues();
-    if (data.length <= 1) return []; // إذا كان الجدول فارغاً أو يحتوي فقط على العناوين
+    if (data.length <= 1) return []; 
     
     var leads = [];
     
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
+      // تخطي الصفوف الفارغة تماماً في شيت جوجل
+      if (!row[0] && !row[1] && !row[2]) continue;
+      
       leads.push({
-        rowIndex: i + 1, // حفظ رقم الصف للتعديل أو الحذف لاحقاً
-        fullname: row[0] || "",
-        phone: row[1] || "",
-        status: row[2] || "",
-        created_at: row[3] ? Utilities.formatDate(new Date(row[3]), Session.getScriptTimeZone(), "yyyy-MM-dd") : ""
+        id: row[0] || "",
+        fullname: row[1] || "",
+        phone: row[2] || "",
+        status: row[3] || "",
+        created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : ""
       });
     }
     return leads;
@@ -80,32 +80,51 @@ function getLeads() {
   }
 }
 
+// دالة للبحث عن رقم الصف باستخدام المعرف الفريد (ID) لمنع أخطاء تداخل وحذف الأسطر
+function findRowById(sheet, id) {
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(id)) {
+      return i + 1; // إرجاع رقم الصف 1-indexed
+    }
+  }
+  return -1;
+}
+
 // دالة لإضافة عميل جديد أو تعديل عميل موجود في الشيت
 function addOrUpdateLead(lead) {
   var sheet = getTargetSheet();
-  
-  // التحقق المباشر وإنشاء العناوين وتنسيق الشيت تلقائياً إذا كان فارغاً
   checkAndInitHeaders(sheet);
   
-  if (lead.rowIndex) {
-    var rowNum = parseInt(lead.rowIndex);
-    sheet.getRange(rowNum, 1).setValue(lead.fullname);
-    sheet.getRange(rowNum, 2).setValue(lead.phone);
-    sheet.getRange(rowNum, 3).setValue(lead.status);
+  // إذا كان العميل يمتلك معرفاً فريداً، نقوم بالبحث عنه وتحديث صفه
+  if (lead.id) {
+    var rowNum = findRowById(sheet, lead.id);
+    if (rowNum !== -1) {
+      sheet.getRange(rowNum, 2).setValue(lead.fullname);
+      sheet.getRange(rowNum, 3).setValue(lead.phone);
+      sheet.getRange(rowNum, 4).setValue(lead.status);
+    } else {
+      // إذا لم يعثر عليه (حالة شاذة)، نقوم بإضافته كجديد
+      var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+      sheet.appendRow([lead.id, lead.fullname, lead.phone, lead.status, dateStr]);
+    }
   } else {
+    // إنشاء معرف فريد للعميل الجديد
+    var uniqueId = "L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000);
     var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-    sheet.appendRow([lead.fullname, lead.phone, lead.status, dateStr]);
+    sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr]);
   }
   
   return getLeads(); 
 }
 
-// دالة لحذف عميل من الشيت بناءً على رقم الصف
-function deleteLead(rowIndex) {
+// دالة لحذف عميل من الشيت باستخدام المعرف الفريد (ID)
+function deleteLead(leadId) {
   var sheet = getTargetSheet();
-  var rowNum = parseInt(rowIndex);
-  sheet.deleteRow(rowNum);
-  
+  var rowNum = findRowById(sheet, leadId);
+  if (rowNum !== -1) {
+    sheet.deleteRow(rowNum);
+  }
   return getLeads(); 
 }
 
@@ -115,11 +134,11 @@ function checkAndInitHeaders(sheet) {
   
   // إذا كان الشيت فارغاً تماماً
   if (lastRow === 0 || (lastRow === 1 && sheet.getRange(1, 1).getValue() === "")) {
-    // كتابة العناوين باللغة العربية في الصف الأول
-    sheet.getRange(1, 1, 1, 4).setValues([["الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة"]]);
+    // كتابة العناوين باللغة العربية مع إدراج المعرف الفريد في العمود الأول
+    sheet.getRange(1, 1, 1, 5).setValues([["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة"]]);
     
     // تنسيق احترافي للصف الأول (عريض، خلفية رمادية فاتحة، محاذاة في المنتصف)
-    var headerRange = sheet.getRange(1, 1, 1, 4);
+    var headerRange = sheet.getRange(1, 1, 1, 5);
     headerRange.setFontWeight("bold")
                .setBackground("#efefef")
                .setHorizontalAlignment("center");
@@ -128,6 +147,6 @@ function checkAndInitHeaders(sheet) {
     sheet.setFrozenRows(1);
     
     // ضبط تلقائي لعرض الأعمدة لتناسب حجم النصوص
-    sheet.autoResizeColumns(1, 4);
+    sheet.autoResizeColumns(1, 5);
   }
 }

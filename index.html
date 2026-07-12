@@ -467,6 +467,8 @@
 <div class="container">
     <!-- بنر التنبيه عند فشل الاتصال بقاعدة بيانات جوجل شيت -->
     <div id="connection-error-banner" style="display:none; background-color:#ff5252; color:white; text-align:center; padding:10px 20px; font-weight:bold; font-size:0.9rem; border-radius:4px; margin-bottom:20px; font-family:'Cairo', sans-serif;"></div>
+    <!-- بنر المزامنة عند وجود عملاء مسجلين أوفلاين -->
+    <div id="sync-warning-banner" style="display:none; background-color:#ffc107; color:#000; text-align:center; padding:10px 20px; font-weight:bold; font-size:0.9rem; border-radius:4px; margin-bottom:20px; font-family:'Cairo', sans-serif; cursor:pointer;" onclick="syncOfflineLeads()"></div>
     <header>
         <div class="logo-section">
             <h1>ليد فلو</h1>
@@ -619,9 +621,9 @@
     };
 
     const DEFAULT_LEADS = [
-        { fullname: "سارة الشافعي", phone: "201012345678", status: "New Lead", created_at: "2026-07-12" },
-        { fullname: "خالد الحربي", phone: "966501234567", status: "Won", created_at: "2026-07-11" },
-        { fullname: "أمين الهاشمي", phone: "9613123456", status: "Proposal Sent", created_at: "2026-07-10" }
+        { id: "L-1", fullname: "سارة الشافعي", phone: "201012345678", status: "New Lead", created_at: "2026-07-12" },
+        { id: "L-2", fullname: "خالد الحربي", phone: "966501234567", status: "Won", created_at: "2026-07-11" },
+        { id: "L-3", fullname: "أمين الهاشمي", phone: "9613123456", status: "Proposal Sent", created_at: "2026-07-10" }
     ];
 
     let leads = [];
@@ -632,6 +634,24 @@
     // التحقق مما إذا كان التطبيق يعمل داخل بيئة Google Apps Script
     const isGoogleAppsScript = typeof google !== 'undefined' && google.script && google.script.run;
 
+    // دالة لتطهير النصوص ومنع ثغرات حقن الكود (XSS Protection)
+    function sanitize(str) {
+        const div = document.createElement('div');
+        div.innerText = String(str || "");
+        return div.innerHTML;
+    }
+
+    // دالة لتحويل الأرقام العربية الشرقية (٠-٩) إلى أرقام عربية قياسية (0-9) لمنع أخطاء الواتساب
+    function normalizePhone(str) {
+        const arabicNums = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        let result = String(str || "");
+        for (let i = 0; i < 10; i++) {
+            const regex = new RegExp(arabicNums[i], 'g');
+            result = result.replace(regex, i);
+        }
+        return result;
+    }
+
     function updateDbStatus(statusClass, statusText) {
         const dbStatusEl = document.getElementById('db-status');
         const dbStatusTextEl = document.getElementById('db-status-text');
@@ -641,8 +661,70 @@
         }
     }
 
+    // إظهار بنر التنبيه بوجود عملاء مسجلين أوفلاين لمزامنتهم
+    function checkOfflineLeadsAlert() {
+        const offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+        const syncBanner = document.getElementById('sync-warning-banner');
+        if (syncBanner) {
+            if (offlineLeads.length > 0) {
+                syncBanner.style.display = "block";
+                syncBanner.innerText = `⚠️ لديك عدد (${offlineLeads.length}) عملاء تم تسجيلهم أوفلاين. اضغط هنا لمزامنتهم مع شيت جوجل الآن.`;
+            } else {
+                syncBanner.style.display = "none";
+            }
+        }
+    }
+
+    // دالة مزامنة ورفع العملاء الذين تم تسجيلهم بدون إنترنت
+    function syncOfflineLeads() {
+        const offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+        if (offlineLeads.length === 0) return;
+
+        const syncBanner = document.getElementById('sync-warning-banner');
+        if (syncBanner) {
+            syncBanner.innerText = "⏳ جاري رفع ومزامنة العملاء مع شيت جوجل...";
+            syncBanner.style.pointerEvents = "none";
+        }
+
+        const promises = offlineLeads.map(lead => {
+            const leadToSave = { ...lead };
+            // إزالة المعرف التلقائي المؤقت لكي تصدره خوادم جوجل بشكل نظيف وسليم
+            if (leadToSave.id && leadToSave.id.startsWith("L-offline-")) {
+                delete leadToSave.id;
+            }
+            return fetch(webAppUrl, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "addOrUpdate",
+                    lead: leadToSave
+                })
+            }).then(res => res.json());
+        });
+
+        Promise.all(promises)
+            .then(results => {
+                if (results.length > 0 && Array.isArray(results[results.length - 1])) {
+                    leads = results[results.length - 1];
+                }
+                localStorage.setItem('meta_crm_offline_leads', "[]");
+                if (syncBanner) {
+                    syncBanner.style.display = "none";
+                    syncBanner.style.pointerEvents = "auto";
+                }
+                alert("✅ تم رفع ومزامنة كافة العملاء الأوفلاين بنجاح مع شيت جوجل!");
+                calculateKPIs();
+                renderLeadsTable();
+            })
+            .catch(err => {
+                console.error("Failed to sync offline leads:", err);
+                if (syncBanner) {
+                    syncBanner.innerText = "🚨 فشل الرفع. اضغط هنا لإعادة المحاولة.";
+                    syncBanner.style.pointerEvents = "auto";
+                }
+            });
+    }
+
     function initData() {
-        // تعيين حالة جاري الاتصال بقاعدة البيانات
         updateDbStatus('status-connecting', 'جاري الاتصال بقاعدة البيانات...');
 
         const tbody = document.getElementById('leads-table-body');
@@ -653,7 +735,7 @@
         if (isGoogleAppsScript) {
             google.script.run.withSuccessHandler(function(data) {
                 updateDbStatus('status-connected', 'متصل بـ Google Sheets');
-                leads = data;
+                leads = Array.isArray(data) ? data : [];
                 calculateKPIs();
                 renderLeadsTable();
             }).getLeads();
@@ -664,12 +746,12 @@
                     const banner = document.getElementById('connection-error-banner');
                     if (banner) banner.style.display = "none";
                     
-                    // تعيين حالة متصل بنجاح
                     updateDbStatus('status-connected', 'متصل بـ Google Sheets');
                     
-                    leads = data;
+                    leads = Array.isArray(data) ? data : [];
                     calculateKPIs();
                     renderLeadsTable();
+                    checkOfflineLeadsAlert();
                 })
                 .catch(err => {
                     console.warn("تنبيه: فشل الاتصال بالـ API، سيتم تشغيل التخزين المحلي الاحتياطي:", err);
@@ -680,7 +762,6 @@
                         banner.innerText = "🚨 فشل الاتصال بقاعدة البيانات (جاري العرض من الذاكرة المؤقتة). تفاصيل الخطأ: " + err.message;
                     }
                     
-                    // تعيين حالة غير متصل (أوفلاين)
                     updateDbStatus('status-error', 'غير متصل (يعمل بالذاكرة المؤقتة)');
                     
                     if (!localStorage.getItem('meta_crm_leads_minimal')) {
@@ -689,6 +770,7 @@
                     leads = JSON.parse(localStorage.getItem('meta_crm_leads_minimal'));
                     calculateKPIs();
                     renderLeadsTable();
+                    checkOfflineLeadsAlert();
                 });
         }
     }
@@ -698,6 +780,7 @@
             alert("إعادة التعيين غير متاحة في بيئة شيت جوجل المباشرة.");
         } else {
             localStorage.removeItem('meta_crm_leads_minimal');
+            localStorage.setItem('meta_crm_offline_leads', '[]');
             initData();
             renderCharts();
         }
@@ -831,17 +914,42 @@
             status: document.getElementById('lead-status').value
         };
 
+    function saveLead(e) {
+        e.preventDefault();
+        const indexStr = document.getElementById('edit-lead-index').value;
+        
+        // جلب زر الحفظ وتعطيله لمنع التكرار (Double click prevention)
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "⏳ جاري الحفظ...";
+        }
+
+        const rawFullname = document.getElementById('lead-fullname').value;
+        const rawPhone = document.getElementById('lead-phone').value;
+        
+        // تطهير المدخلات وتنسيق الرقم
+        const cleanFullname = sanitize(rawFullname);
+        const cleanPhone = normalizePhone(rawPhone);
+        const cleanStatus = sanitize(document.getElementById('lead-status').value);
+
+        const newLead = {
+            fullname: cleanFullname,
+            phone: cleanPhone,
+            status: cleanStatus
+        };
+
         if (isGoogleAppsScript) {
             if (indexStr !== "") {
                 const idx = parseInt(indexStr);
-                newLead.rowIndex = leads[idx].rowIndex;
+                newLead.id = leads[idx].id;
             }
             google.script.run.withSuccessHandler(function(updatedLeads) {
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.innerText = "حفظ";
                 }
-                leads = updatedLeads;
+                leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
@@ -849,7 +957,7 @@
         } else {
             if (indexStr !== "") {
                 const idx = parseInt(indexStr);
-                newLead.rowIndex = leads[idx].rowIndex;
+                newLead.id = leads[idx].id;
             }
 
             fetch(webAppUrl, {
@@ -865,7 +973,7 @@
                     submitBtn.disabled = false;
                     submitBtn.innerText = "حفظ";
                 }
-                leads = updatedLeads;
+                leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
@@ -876,58 +984,81 @@
                     submitBtn.disabled = false;
                     submitBtn.innerText = "حفظ";
                 }
+                
+                // حفظ أوفلاين في التخزين المحلي المنفصل للمزامنة لاحقاً
+                let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+                
                 if (indexStr === "") {
+                    newLead.id = "L-offline-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000);
                     newLead.created_at = new Date().toISOString().split('T')[0];
                     leads.push(newLead);
+                    offlineLeads.push(newLead);
                 } else {
                     const idx = parseInt(indexStr);
+                    newLead.id = leads[idx].id;
                     leads[idx] = { ...leads[idx], ...newLead };
+                    
+                    const oIdx = offlineLeads.findIndex(ol => ol.id === newLead.id);
+                    if (oIdx !== -1) {
+                        offlineLeads[oIdx] = { ...offlineLeads[oIdx], ...newLead };
+                    } else {
+                        offlineLeads.push(newLead);
+                    }
                 }
+                
                 localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                localStorage.setItem('meta_crm_offline_leads', JSON.stringify(offlineLeads));
+                
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
+                checkOfflineLeadsAlert();
             });
         }
     }
 
     function deleteLead(index) {
         if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
-            // إظهار تنبيه مؤقت للمستخدم أثناء المعالجة في جوجل
             const tbody = document.getElementById('leads-table-body');
             if (tbody) {
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري معالجة حذف العميل من شيت جوجل...</td></tr>';
             }
 
+            const targetLeadId = leads[index].id;
+
             if (isGoogleAppsScript) {
-                const rowIndex = leads[index].rowIndex;
                 google.script.run.withSuccessHandler(function(updatedLeads) {
-                    leads = updatedLeads;
+                    leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                     calculateKPIs();
                     renderLeadsTable();
-                }).deleteLead(rowIndex);
+                }).deleteLead(targetLeadId);
             } else {
-                const rowIndex = leads[index].rowIndex;
-
                 fetch(webAppUrl, {
                     method: "POST",
                     body: JSON.stringify({
                         action: "delete",
-                        rowIndex: rowIndex
+                        leadId: targetLeadId
                     })
                 })
                 .then(res => res.json())
                 .then(updatedLeads => {
-                    leads = updatedLeads;
+                    leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                     calculateKPIs();
                     renderLeadsTable();
                 })
                 .catch(err => {
                     console.warn("تنبيه: فشل الحذف عبر الـ API، سيتم الحذف محلياً:", err);
+                    
                     leads.splice(index, 1);
                     localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                    
+                    let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+                    offlineLeads = offlineLeads.filter(ol => ol.id !== targetLeadId);
+                    localStorage.setItem('meta_crm_offline_leads', JSON.stringify(offlineLeads));
+                    
                     calculateKPIs();
                     renderLeadsTable();
+                    checkOfflineLeadsAlert();
                 });
             }
         }
