@@ -565,25 +565,38 @@
 
     let leads = [];
 
+    // رابط الويب الخاص بـ Google Apps Script للاتصال بالداتابيز مباشرة
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbxocQXYZkkVHjV-yVTwLVha-55lF2xEazSIoy6iRM2gzrknLlYVgAon85GdkpDfV_VCPw/exec";
+
     // التحقق مما إذا كان التطبيق يعمل داخل بيئة Google Apps Script
     const isGoogleAppsScript = typeof google !== 'undefined' && google.script && google.script.run;
 
     function initData() {
         if (isGoogleAppsScript) {
-            // جلب البيانات من شيت جوجل مباشرة
+            // جلب البيانات من شيت جوجل مباشرة داخل بيئة جوجل
             google.script.run.withSuccessHandler(function(data) {
                 leads = data;
                 calculateKPIs();
                 renderLeadsTable();
             }).getLeads();
         } else {
-            // كود بديل للتجريب المحلي (Local Storage)
-            if (!localStorage.getItem('meta_crm_leads_minimal')) {
-                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(DEFAULT_LEADS));
-            }
-            leads = JSON.parse(localStorage.getItem('meta_crm_leads_minimal'));
-            calculateKPIs();
-            renderLeadsTable();
+            // جلب البيانات من الـ Web App الخاص بجوجل عبر الـ API للتشغيل الخارجي
+            fetch(webAppUrl + "?action=getLeads")
+                .then(res => res.json())
+                .then(data => {
+                    leads = data;
+                    calculateKPIs();
+                    renderLeadsTable();
+                })
+                .catch(err => {
+                    console.warn("تنبيه: فشل الاتصال بالـ API، سيتم تشغيل التخزين المحلي الاحتياطي:", err);
+                    if (!localStorage.getItem('meta_crm_leads_minimal')) {
+                        localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(DEFAULT_LEADS));
+                    }
+                    leads = JSON.parse(localStorage.getItem('meta_crm_leads_minimal'));
+                    calculateKPIs();
+                    renderLeadsTable();
+                });
         }
     }
 
@@ -700,6 +713,7 @@
         };
 
         if (isGoogleAppsScript) {
+            // حفظ البيانات في شيت جوجل مباشرة داخل بيئة جوجل
             if (indexStr !== "") {
                 const idx = parseInt(indexStr);
                 newLead.rowIndex = leads[idx].rowIndex;
@@ -711,23 +725,47 @@
                 closeLeadModal();
             }).addOrUpdateLead(newLead);
         } else {
-            if (indexStr === "") {
-                newLead.created_at = new Date().toISOString().split('T')[0];
-                leads.push(newLead);
-            } else {
+            // إرسال البيانات للـ Web App الخاص بجوجل عبر الـ API
+            if (indexStr !== "") {
                 const idx = parseInt(indexStr);
-                leads[idx] = { ...leads[idx], ...newLead };
+                newLead.rowIndex = leads[idx].rowIndex;
             }
-            localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
-            calculateKPIs();
-            renderLeadsTable();
-            closeLeadModal();
+
+            fetch(webAppUrl, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "addOrUpdate",
+                    lead: newLead
+                })
+            })
+            .then(res => res.json())
+            .then(updatedLeads => {
+                leads = updatedLeads;
+                calculateKPIs();
+                renderLeadsTable();
+                closeLeadModal();
+            })
+            .catch(err => {
+                console.warn("تنبيه: فشل إرسال البيانات للـ API، سيتم الحفظ محلياً:", err);
+                if (indexStr === "") {
+                    newLead.created_at = new Date().toISOString().split('T')[0];
+                    leads.push(newLead);
+                } else {
+                    const idx = parseInt(indexStr);
+                    leads[idx] = { ...leads[idx], ...newLead };
+                }
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                calculateKPIs();
+                renderLeadsTable();
+                closeLeadModal();
+            });
         }
     }
 
     function deleteLead(index) {
         if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
             if (isGoogleAppsScript) {
+                // حذف الصف من شيت جوجل مباشرة داخل بيئة جوجل
                 const rowIndex = leads[index].rowIndex;
                 google.script.run.withSuccessHandler(function(updatedLeads) {
                     leads = updatedLeads;
@@ -735,10 +773,29 @@
                     renderLeadsTable();
                 }).deleteLead(rowIndex);
             } else {
-                leads.splice(index, 1);
-                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
-                calculateKPIs();
-                renderLeadsTable();
+                // حذف الصف عبر الـ Web App API الخارجي
+                const rowIndex = leads[index].rowIndex;
+
+                fetch(webAppUrl, {
+                    method: "POST",
+                    body: JSON.stringify({
+                        action: "delete",
+                        rowIndex: rowIndex
+                    })
+                })
+                .then(res => res.json())
+                .then(updatedLeads => {
+                    leads = updatedLeads;
+                    calculateKPIs();
+                    renderLeadsTable();
+                })
+                .catch(err => {
+                    console.warn("تنبيه: فشل الحذف عبر الـ API، سيتم الحذف محلياً:", err);
+                    leads.splice(index, 1);
+                    localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                    calculateKPIs();
+                    renderLeadsTable();
+                });
             }
         }
     }
