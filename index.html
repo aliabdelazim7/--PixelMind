@@ -1374,31 +1374,24 @@
     window.onload = function() {
         initData();
         
-        // تسجيل الـ Service Worker لتمكين التشغيل أوفلاين كـ PWA مع كاشف التحديثات الفورية
+        // إلغاء تسجيل الـ Service Worker وحذف الكاش تماماً لضمان عدم حدوث تعليق أو حلقات تحديث مفرطة
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => {
-                    console.log('Service Worker registered successfully!', reg);
-                    
-                    // إجبار المتصفح على البحث عن تحديثات فورية للملفات عند فتح التطبيق
-                    reg.update();
-                    
-                    // عند العثور على تحديث جديد، نقوم بإعادة تحميل التطبيق تلقائياً لتثبيته
-                    reg.onupdatefound = () => {
-                        const installingWorker = reg.installing;
-                        if (installingWorker) {
-                            installingWorker.onstatechange = () => {
-                                if (installingWorker.state === 'installed') {
-                                    if (navigator.serviceWorker.controller) {
-                                        console.log('New update installed. Reloading app...');
-                                        window.location.reload();
-                                    }
-                                }
-                            };
-                        }
-                    };
-                })
-                .catch(err => console.error('Service Worker registration failed:', err));
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister().then(function() {
+                        console.log('Service Worker unregistered successfully!');
+                    });
+                }
+            });
+        }
+        
+        // تفريغ الكاش بالكامل للتأكد من الاتصال المباشر بجوجل شيت
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
         }
 
         // مستمع تغيير الحالة لإظهار حقل الموعد
