@@ -1433,7 +1433,7 @@
         });
     }
 
-    // دالة للتحقق من المواعيد القريبة وإصدار التنبيهات
+    // دالة للتحقق من المواعيد القريبة وإصدار التنبيهات مع حماية كاملة من الأعطال
     function checkUpcomingAppointments() {
         if (!Array.isArray(leads)) return;
 
@@ -1443,21 +1443,43 @@
         }
 
         const now = new Date();
-        const todayStr = now.toISOString().split('T')[0];
 
         leads.forEach(l => {
             if (l.status === 'Appointment Booked' && l.appointment_time) {
-                const apptDate = new Date(l.appointment_time);
-                const apptDateStr = apptDate.toISOString().split('T')[0];
-
-                if (apptDateStr === todayStr) {
-                    const diffMs = apptDate - now;
-                    const diffMins = Math.round(diffMs / 60000);
-
-                    // إرسال تنبيه إذا كان الموعد اليوم وفي حدود ساعة قادمة أو مضى عليه 30 دقيقة
-                    if (diffMins >= -30 && diffMins <= 60) {
-                        showAppointmentReminder(l, diffMins);
+                try {
+                    const cleanAppTime = l.appointment_time.replace('T', ' ');
+                    const parts = cleanAppTime.split(' ');
+                    if (parts.length >= 2) {
+                        const dateParts = parts[0].split('-');
+                        const timeParts = parts[1].split(':');
+                        
+                        if (dateParts.length >= 3 && timeParts.length >= 2) {
+                            const year = parseInt(dateParts[0]);
+                            const month = parseInt(dateParts[1]) - 1; // 0-indexed
+                            const day = parseInt(dateParts[2]);
+                            const hour = parseInt(timeParts[0]);
+                            const minute = parseInt(timeParts[1]);
+                            
+                            const apptDate = new Date(year, month, day, hour, minute);
+                            if (!isNaN(apptDate.getTime())) {
+                                // مقارنة التواريخ والوقت بأمان
+                                if (apptDate.getFullYear() === now.getFullYear() &&
+                                    apptDate.getMonth() === now.getMonth() &&
+                                    apptDate.getDate() === now.getDate()) {
+                                    
+                                    const diffMs = apptDate - now;
+                                    const diffMins = Math.round(diffMs / 60000);
+                                    
+                                    // إرسال تنبيه إذا كان الموعد اليوم وفي حدود ساعة قادمة أو مضى عليه 30 دقيقة
+                                    if (diffMins >= -30 && diffMins <= 60) {
+                                        showAppointmentReminder(l, diffMins);
+                                    }
+                                }
+                            }
+                        }
                     }
+                } catch(e) {
+                    console.warn("فشل فحص موعد العميل:", l, e);
                 }
             }
         });
@@ -1465,7 +1487,25 @@
 
     // دالة لعرض التنبيه كإشعار نظامي عائم في زاوية الشاشة
     function showAppointmentReminder(lead, diffMins) {
-        const timeStr = new Date(lead.appointment_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        let timeStr = "";
+        try {
+            const parts = lead.appointment_time.replace('T', ' ').split(' ');
+            if (parts.length >= 2) {
+                const timeParts = parts[1].split(':');
+                if (timeParts.length >= 2) {
+                    let hour = parseInt(timeParts[0]);
+                    const minute = timeParts[1];
+                    const ampm = hour >= 12 ? 'م' : 'ص';
+                    hour = hour % 12;
+                    if (hour === 0) hour = 12;
+                    timeStr = `${hour}:${minute} ${ampm}`;
+                }
+            }
+        } catch(e) {
+            timeStr = lead.appointment_time;
+        }
+        if (!timeStr) timeStr = lead.appointment_time;
+
         const title = `📅 تذكير بموعد عميل اليوم`;
         let message = "";
 
