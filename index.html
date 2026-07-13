@@ -1412,7 +1412,7 @@
     // دالة إرسال الإشعارات للتلجرام مباشرة من المتصفح (Vercel) لتخطي صلاحيات جوجل المعقدة
     function sendTelegramNotification(type, lead, oldLead = null) {
         const botToken = "8631149202:AAGL3IMsjFHPa1VBsYW4VSHrHQ5ckiFtOAQ";
-        const chatId = "7416290524";
+        const chatIds = ["7416290524", "5507184715"];
         
         let text = "";
         
@@ -1476,17 +1476,19 @@
 
         if (!text) return;
 
-        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: "HTML"
-            })
-        }).catch(err => console.warn("فشل إرسال إشعار تلجرام البصري:", err));
+        chatIds.forEach(chatId => {
+            fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text,
+                    parse_mode: "HTML"
+                })
+            }).catch(err => console.warn(`فشل إرسال إشعار تلجرام للمعرف ${chatId}:`, err));
+        });
     }
 
     function renderCharts() {
