@@ -267,6 +267,11 @@ function formatAppointmentTimeArabic(apptStr) {
   }
 }
 
+// دالة اختبارية لتشغيلها يدوياً لتفعيل صلاحيات الإنترنت (UrlFetchApp) في جوجل شيت
+function testTelegram() {
+  sendTelegramMessage("🧪 <b>رسالة تجريبية من ليد فلو!</b>\nالبوت متصل بنجاح بقاعدة البيانات وكل شيء يعمل بشكل ممتاز.");
+}
+
 // دالة المساعدة للتحقق وإنشاء العناوين تلقائياً وتنسيق جدول البيانات
 function checkAndInitHeaders(sheet) {
   var lastRow = sheet.getLastRow();
