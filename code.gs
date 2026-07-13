@@ -108,7 +108,7 @@ function findRowById(sheet, id) {
   return -1;
 }
 
-// دالة لإضافة عميل جديد أو تعديل عميل موجود في الشيت مع حماية كاملة من التكرار
+// دالة لإضافة عميل جديد أو تعديل عميل موجود في الشيت مع حماية كاملة من التكرار ويشمل إشعارات تلجرام
 function addOrUpdateLead(lead) {
   var sheet = getTargetSheet();
   checkAndInitHeaders(sheet);
@@ -117,10 +117,25 @@ function addOrUpdateLead(lead) {
   if (lead.id) {
     var rowNum = findRowById(sheet, lead.id);
     if (rowNum !== -1) {
+      var oldStatus = sheet.getRange(rowNum, 4).getValue();
+      var oldAppTime = sheet.getRange(rowNum, 6).getValue();
+      
       sheet.getRange(rowNum, 2).setValue(lead.fullname);
       sheet.getRange(rowNum, 3).setValue(lead.phone);
       sheet.getRange(rowNum, 4).setValue(lead.status);
       sheet.getRange(rowNum, 6).setValue(lead.appointment_time || ""); // حفظ الموعد في العمود السادس (F)
+      
+      // إرسال إشعار تحديث البيانات للتليجرام إذا تغيرت الحالة أو الموعد
+      if (oldStatus !== lead.status || oldAppTime !== lead.appointment_time) {
+        var msg = "🔄 <b>تحديث حالة عميل!</b>\n\n" +
+                  "👤 <b>الاسم:</b> " + lead.fullname + "\n" +
+                  "📞 <b>الهاتف:</b> " + lead.phone + "\n" +
+                  "❌ <b>الحالة السابقة:</b> " + translateStatusToArabic(oldStatus) + "\n" +
+                  "✅ <b>الحالة الجديدة:</b> " + translateStatusToArabic(lead.status) + "\n" +
+                  (lead.appointment_time ? "📅 <b>الموعد:</b> " + formatAppointmentTimeArabic(lead.appointment_time) : "");
+        sendTelegramMessage(msg);
+      }
+      
       return getLeads();
     }
   }
@@ -133,8 +148,23 @@ function addOrUpdateLead(lead) {
     if (sheetFullname === String(lead.fullname).trim() && sheetPhone === String(lead.phone).trim()) {
       // العميل موجود بالفعل بنفس الاسم ورقم الهاتف! نقوم بتحديث حالته وموعده فقط لمنع التكرار
       var rowNum = i + 1;
+      var oldStatus = data[i][3];
+      var oldAppTime = data[i][5];
+      
       sheet.getRange(rowNum, 4).setValue(lead.status);
       sheet.getRange(rowNum, 6).setValue(lead.appointment_time || "");
+      
+      // إرسال إشعار تحديث البيانات للتليجرام إذا تغيرت الحالة أو الموعد
+      if (oldStatus !== lead.status || oldAppTime !== lead.appointment_time) {
+        var msg = "🔄 <b>تحديث حالة عميل!</b>\n\n" +
+                  "👤 <b>الاسم:</b> " + lead.fullname + "\n" +
+                  "📞 <b>الهاتف:</b> " + lead.phone + "\n" +
+                  "❌ <b>الحالة السابقة:</b> " + translateStatusToArabic(oldStatus) + "\n" +
+                  "✅ <b>الحالة الجديدة:</b> " + translateStatusToArabic(lead.status) + "\n" +
+                  (lead.appointment_time ? "📅 <b>الموعد:</b> " + formatAppointmentTimeArabic(lead.appointment_time) : "");
+        sendTelegramMessage(msg);
+      }
+      
       return getLeads();
     }
   }
@@ -144,17 +174,97 @@ function addOrUpdateLead(lead) {
   var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
   sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
   
+  // إرسال إشعار إضافة عميل جديد للتليجرام
+  var msg = "➕ <b>إضافة عميل جديد!</b>\n\n" +
+            "👤 <b>الاسم:</b> " + lead.fullname + "\n" +
+            "📞 <b>الهاتف:</b> " + lead.phone + "\n" +
+            "⚡ <b>الحالة:</b> " + translateStatusToArabic(lead.status) + "\n" +
+            (lead.appointment_time ? "📅 <b>الموعد:</b> " + formatAppointmentTimeArabic(lead.appointment_time) : "");
+  sendTelegramMessage(msg);
+  
   return getLeads(); 
 }
 
-// دالة لحذف عميل من الشيت باستخدام المعرف الفريد (ID)
+// دالة لحذف عميل من الشيت باستخدام المعرف الفريد (ID) مع إشعار تليجرام
 function deleteLead(leadId) {
   var sheet = getTargetSheet();
   var rowNum = findRowById(sheet, leadId);
   if (rowNum !== -1) {
+    var fullname = sheet.getRange(rowNum, 2).getValue();
+    var phone = sheet.getRange(rowNum, 3).getValue();
+    
     sheet.deleteRow(rowNum);
+    
+    // إرسال إشعار حذف العميل للتليجرام
+    var msg = "🗑️ <b>حذف عميل!</b>\n\n" +
+              "👤 <b>الاسم:</b> " + fullname + "\n" +
+              "📞 <b>الهاتف:</b> " + phone;
+    sendTelegramMessage(msg);
   }
   return getLeads(); 
+}
+
+// ==================== إعدادات وإشعارات التلجرام ====================
+const TELEGRAM_CHAT_ID = "7416290524";
+const TELEGRAM_BOT_TOKEN = "8631149202:AAGL3IMsjFHPa1VBsYW4VSHrHQ5ckiFtOAQ";
+
+function sendTelegramMessage(text) {
+  try {
+    var url = "https://api.telegram.org/bot" + TELEGRAM_BOT_TOKEN + "/sendMessage";
+    var payload = {
+      "chat_id": TELEGRAM_CHAT_ID,
+      "text": text,
+      "parse_mode": "HTML"
+    };
+    var options = {
+      "method": "post",
+      "contentType": "application/json",
+      "payload": JSON.stringify(payload),
+      "muteHttpExceptions": true
+    };
+    UrlFetchApp.fetch(url, options);
+  } catch (e) {
+    Logger.log("فشل إرسال إشعار تلجرام: " + e.toString());
+  }
+}
+
+function translateStatusToArabic(status) {
+  var mapping = {
+    "New Lead": "⚪ عميل جديد",
+    "Contacted": "🔵 تم الاتصال",
+    "Follow Up Required": "🟠 يحتاج متابعة",
+    "Appointment Booked": "📅 تم حجز موعد",
+    "Proposal Sent": "📄 تم إرسال العرض",
+    "Negotiating": "🟡 تفاوض",
+    "Won": "🟢 تم البيع بنجاح (Won)",
+    "Lost": "🔴 صفقة خاسرة (Lost)",
+    "Ghosted": "⚫ لم يرد / اختفى (Ghosted)",
+    "Not Interested": "❌ غير مهتم"
+  };
+  return mapping[status] || status;
+}
+
+function formatAppointmentTimeArabic(apptStr) {
+  if (!apptStr) return "";
+  try {
+    var cleanStr = apptStr.replace('T', ' ');
+    var parts = cleanStr.split(' ');
+    if (parts.length < 2) return apptStr;
+    var dateParts = parts[0].split('-');
+    var timeParts = parts[1].split(':');
+    if (dateParts.length < 3 || timeParts.length < 2) return apptStr;
+    
+    var month = parseInt(dateParts[1]);
+    var day = parseInt(dateParts[2]);
+    var hour = parseInt(timeParts[0]);
+    var minute = timeParts[1];
+    var ampm = hour >= 12 ? 'م' : 'ص';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return day + "/" + month + " (" + hour + ":" + minute + " " + ampm + ")";
+  } catch (e) {
+    return apptStr;
+  }
 }
 
 // دالة المساعدة للتحقق وإنشاء العناوين تلقائياً وتنسيق جدول البيانات
