@@ -937,8 +937,8 @@
                 checkUpcomingAppointments();
             }).getLeads();
         } else {
-            // 2. فحص وتحديث البيانات في الخلفية
-            fetch(webAppUrl + "?action=getLeads")
+            // 2. فحص وتحديث البيانات في الخلفية مع مانع الكاش تلقائياً
+            fetch(webAppUrl + "?action=getLeads&_t=" + new Date().getTime())
                 .then(res => res.json())
                 .then(data => {
                     const banner = document.getElementById('connection-error-banner');
