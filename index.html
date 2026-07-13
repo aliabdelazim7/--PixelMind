@@ -469,32 +469,55 @@
         /* الاستعلامات المتجاوبة للهواتف والأجهزة اللوحية */
         @media (max-width: 768px) {
             .container {
-                padding: 15px;
+                padding: 12px;
             }
             header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 16px;
+                gap: 12px;
             }
             .header-actions {
                 width: 100%;
-                display: flex;
-                gap: 10px;
+                display: flex !important;
+                gap: 8px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            .header-actions::-webkit-scrollbar {
+                display: none; /* إخفاء شريط التمرير لمظهر جمالي ونظيف */
             }
             .header-actions .btn {
-                flex: 1;
-                justify-content: center;
+                flex: 0 0 auto !important;
                 font-size: 0.85rem;
-                padding: 10px 12px;
+                padding: 8px 14px;
             }
             .kpi-grid {
-                grid-template-columns: 1fr;
-                gap: 12px;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+                margin-bottom: 16px !important;
+            }
+            .kpi-card {
+                padding: 10px !important;
+                text-align: center;
+            }
+            .kpi-card h3 {
+                font-size: 0.7rem !important;
+                margin-bottom: 4px !important;
+            }
+            .kpi-value {
+                font-size: 1.15rem !important;
+                font-weight: 800 !important;
+            }
+            .kpi-subtitle {
+                font-size: 0.6rem !important;
+                opacity: 0.7;
             }
             .control-bar {
                 flex-direction: column;
                 align-items: stretch;
-                gap: 12px;
+                gap: 10px;
             }
             .search-wrapper {
                 max-width: 100%;
@@ -506,25 +529,6 @@
                 flex: 1;
                 font-size: 0.85rem;
             }
-        }
-
-        }
-
-        .select-col {
-            text-align: center;
-        }
-        @media (max-width: 600px) {
-            .select-col {
-                display: flex !important;
-                align-items: center;
-                gap: 10px;
-                border-bottom: 1px dashed var(--border-color);
-                padding-bottom: 8px !important;
-                margin-bottom: 8px;
-            }
-        }
-
-        @media (max-width: 768px) {
             .stats-dashboard-grid {
                 grid-template-columns: 1fr !important;
             }
@@ -550,32 +554,50 @@
             td {
                 border: none;
                 border-bottom: 1px solid rgba(255,255,255,0.05);
-                position: relative;
-                padding: 10px 0;
-                padding-right: 45%;
-                text-align: left;
+                padding: 12px 6px;
                 display: flex;
                 align-items: center;
-                justify-content: flex-end;
+                justify-content: space-between;
                 min-height: 44px;
+                font-size: 0.85rem;
             }
             td:last-child {
                 border-bottom: none;
             }
             td::before {
-                position: absolute;
-                right: 8px;
-                width: 40%;
-                padding-right: 0;
-                white-space: nowrap;
                 content: attr(data-label);
                 font-weight: 700;
                 color: var(--text-secondary);
-                text-align: right;
+                margin-left: 10px;
+                flex-shrink: 0;
+            }
+            .select-col {
+                border-bottom: 1px dashed var(--border-color) !important;
+                padding-bottom: 8px !important;
+                margin-bottom: 8px !important;
+            }
+            td[data-label="الإجراءات"] {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: none !important;
+                padding-top: 12px !important;
+            }
+            td[data-label="الإجراءات"]::before {
+                display: none !important;
             }
             .action-row {
-                justify-content: flex-end;
-                width: 100%;
+                width: 100% !important;
+                display: flex !important;
+                gap: 8px !important;
+                justify-content: space-between !important;
+            }
+            .action-row .btn {
+                flex: 1 !important;
+                justify-content: center !important;
+                text-align: center !important;
+                padding: 10px !important;
+                font-size: 0.85rem !important;
             }
         }
     </style>
@@ -596,14 +618,13 @@
                 <span id="db-status-text">جاري الاتصال بقاعدة البيانات...</span>
             </div>
         </div>
-        <div class="header-actions" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end;">
+        <div class="header-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <!-- زر تثبيت التطبيق للأندرويد ومتصفح كروم -->
-            <button id="install-pwa-btn" class="btn" style="display:none; background-color:#28a745; color:white; border-color:#28a745;" onclick="installPWA()">📲 تثبيت التطبيق</button>
-            <button class="btn btn-secondary" onclick="sendManualTelegramReport()">📊 تقرير تلجرام</button>
-            <button class="btn btn-secondary" onclick="openBulkAddModal()">📥 إضافة كمية</button>
-            <button class="btn btn-danger" id="bulk-delete-btn" style="display: none; background-color: #dc3545; color: white; border-color: #dc3545;" onclick="deleteSelectedLeads()">🗑️ حذف المحدد (0)</button>
-            <button class="btn btn-secondary" onclick="resetDefaultData()">إعادة تعيين البيانات</button>
-            <button class="btn" onclick="openNewLeadModal()">+ إضافة عميل</button>
+            <button id="install-pwa-btn" class="btn" style="display:none; background-color:#28a745; color:white; border-color:#28a745; padding: 8px 14px; font-size: 0.9rem;" onclick="installPWA()">📲 تثبيت</button>
+            <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.9rem;" onclick="sendManualTelegramReport()">📊 تقرير تلجرام</button>
+            <button class="btn btn-danger" id="bulk-delete-btn" style="display: none; background-color: #dc3545; color: white; border-color: #dc3545; padding: 8px 14px; font-size: 0.9rem;" onclick="deleteSelectedLeads()">🗑️ حذف المحدد (0)</button>
+            <button class="btn" style="padding: 8px 14px; font-size: 0.9rem;" onclick="openNewLeadModal()">+ إضافة عميل</button>
+            <button class="btn btn-secondary" style="padding: 8px 8px; font-size: 0.8rem; opacity: 0.4;" onclick="resetDefaultData()" title="إعادة تعيين البيانات">🔄</button>
         </div>
     </header>
 
@@ -857,30 +878,6 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeLeadModal()">إلغاء</button>
                 <button type="submit" class="btn">حفظ</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- MODAL: Bulk Add -->
-<div class="modal-overlay" id="bulk-add-modal">
-    <div class="modal" style="max-width: 500px;">
-        <div class="modal-header">
-            <div class="modal-title">📥 إضافة كمية كبيرة من العملاء</div>
-            <button class="modal-close" onclick="closeBulkAddModal()">&times;</button>
-        </div>
-        <form id="bulk-add-form" onsubmit="saveBulkLeads(event)">
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.4;">
-                أدخل العملاء (عميل واحد في كل سطر). الصيغ المقبولة:<br>
-                <code>الاسم - الهاتف</code> أو <code>الاسم, الهاتف</code> أو <code>الاسم: الهاتف</code>
-            </p>
-            <div class="form-group">
-                <label for="bulk-leads-input">بيانات العملاء</label>
-                <textarea id="bulk-leads-input" rows="8" style="width: 100%; padding: 10px; background-color: #222; color: #fff; border: 1px solid var(--border-color); border-radius: 6px; font-family: monospace; direction: rtl; text-align: right; resize: vertical;" placeholder="أحمد محمد - 01234567890&#10;محمود علي - 01000000000" required></textarea>
-            </div>
-            <div class="modal-footer" style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 15px;">
-                <button type="button" class="btn btn-secondary" onclick="closeBulkAddModal()">إلغاء</button>
-                <button type="submit" class="btn" id="bulk-save-btn">حفظ الكمية</button>
             </div>
         </form>
     </div>
@@ -1947,144 +1944,6 @@
         sendTelegramNotificationRaw(text);
     }
 
-    // فتح وإغلاق نافذة إضافة كمية
-    function openBulkAddModal() {
-        document.getElementById('bulk-leads-input').value = '';
-        document.getElementById('bulk-add-modal').classList.add('active');
-    }
-    
-    function closeBulkAddModal() {
-        document.getElementById('bulk-add-modal').classList.remove('active');
-    }
-    
-    // حفظ العملاء المضافين بالكمية
-    function saveBulkLeads(e) {
-        e.preventDefault();
-        const textInput = document.getElementById('bulk-leads-input').value;
-        const lines = textInput.split('\n');
-        
-        const newLeads = [];
-        const dateStr = new Date().toISOString().split('T')[0];
-        
-        lines.forEach(line => {
-            const cleanLine = line.trim();
-            if (!cleanLine) return;
-            
-            let parts = [];
-            if (cleanLine.includes('-')) {
-                parts = cleanLine.split('-');
-            } else if (cleanLine.includes(',')) {
-                parts = cleanLine.split(',');
-            } else if (cleanLine.includes(':')) {
-                parts = cleanLine.split(':');
-            } else {
-                const spaceIdx = cleanLine.indexOf(' ');
-                if (spaceIdx !== -1) {
-                    parts = [cleanLine.substring(0, spaceIdx), cleanLine.substring(spaceIdx + 1)];
-                }
-            }
-            
-            if (parts.length >= 2) {
-                const name = parts[0].trim();
-                const phone = normalizePhone(parts[1].trim());
-                if (name && phone) {
-                    newLeads.push({
-                        id: "L-bulk-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000) + "-" + newLeads.length,
-                        fullname: name,
-                        phone: phone,
-                        status: "New Lead",
-                        created_at: dateStr,
-                        appointment_time: ""
-                    });
-                }
-            }
-        });
-        
-        if (newLeads.length === 0) {
-            alert("لم نتمكن من قراءة أي عميل سليم من النص المُدخل. يرجى التأكد من التنسيق (الاسم - الهاتف).");
-            return;
-        }
-        
-        const saveBtn = document.getElementById('bulk-save-btn');
-        if (saveBtn) {
-            saveBtn.disabled = true;
-            saveBtn.innerText = "⏳ جاري الرفع...";
-        }
-        
-        if (isGoogleAppsScript) {
-            google.script.run.withSuccessHandler(function(updatedLeads) {
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = "حفظ الكمية";
-                }
-                leads = Array.isArray(updatedLeads) ? updatedLeads : [];
-                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
-                calculateKPIs();
-                renderLeadsTable();
-                closeBulkAddModal();
-                
-                // إرسال إشعار التلجرام
-                sendBulkAddTelegramNotification(newLeads);
-            }).addLeadsBulk(newLeads);
-        } else {
-            fetch(webAppUrl, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "addBulk",
-                    leads: newLeads
-                })
-            })
-            .then(res => res.json())
-            .then(updatedLeads => {
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = "حفظ الكمية";
-                }
-                leads = Array.isArray(updatedLeads) ? updatedLeads : [];
-                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
-                calculateKPIs();
-                renderLeadsTable();
-                closeBulkAddModal();
-                
-                // إرسال إشعار التلجرام
-                sendBulkAddTelegramNotification(newLeads);
-            })
-            .catch(err => {
-                console.warn("فشل رفع الكمية، يتم الحفظ أوفلاين:", err);
-                if (saveBtn) {
-                    saveBtn.disabled = false;
-                    saveBtn.innerText = "حفظ الكمية";
-                }
-                
-                let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
-                newLeads.forEach(nl => {
-                    leads.push(nl);
-                    offlineLeads.push(nl);
-                });
-                
-                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
-                localStorage.setItem('meta_crm_offline_leads', JSON.stringify(offlineLeads));
-                
-                calculateKPIs();
-                renderLeadsTable();
-                closeBulkAddModal();
-                checkOfflineLeadsAlert();
-                
-                // إرسال إشعار التلجرام
-                sendBulkAddTelegramNotification(newLeads);
-            });
-        }
-    }
-    
-    // إرسال إشعار إضافة جماعية للتلجرام
-    function sendBulkAddTelegramNotification(newLeads) {
-        const namesList = newLeads.map(l => `• ${l.fullname} (${l.phone})`).join('\n');
-        const text = `📥 <b>إضافة مجموعة عملاء دفعة واحدة (Bulk Add)!</b>\n\n` +
-                     `👥 <b>عدد العملاء المضافين:</b> ${newLeads.length}\n\n` +
-                     `📋 <b>قائمة العملاء الجدد:</b>\n${namesList}`;
-                     
-        sendTelegramNotificationRaw(text);
-    }
 
     // إرسال تقرير إحصائي كامل يدوياً للتلجرام
     function sendManualTelegramReport() {
