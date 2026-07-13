@@ -688,10 +688,48 @@
                 </select>
             </div>
 
-            <div class="form-group" id="appointment-time-group" style="display: none;">
-                <label for="lead-appointment-time">تاريخ ووقت الموعد</label>
-                <!-- تغيير الحقل ليدعم مكتبة Flatpickr للاختيار المرئي بدلاً من الكتابة -->
-                <input type="text" id="lead-appointment-time" placeholder="اختر التاريخ والوقت الموعد..." style="text-align: right; direction: rtl;">
+            <div class="form-group" id="appointment-time-group" style="display: none; gap: 12px; flex-direction: row;">
+                <div style="flex: 1;">
+                    <label for="lead-appointment-date">تاريخ الموعد</label>
+                    <input type="text" id="lead-appointment-date" placeholder="اختر التاريخ..." style="text-align: right; direction: rtl;">
+                </div>
+                <div style="width: 140px;">
+                    <label for="lead-appointment-time-select">وقت الموعد</label>
+                    <select id="lead-appointment-time-select" style="text-align: right; direction: rtl;">
+                        <option value="08:00">08:00 ص</option>
+                        <option value="08:30">08:30 ص</option>
+                        <option value="09:00">09:00 ص</option>
+                        <option value="09:30">09:30 ص</option>
+                        <option value="10:00">10:00 ص</option>
+                        <option value="10:30">10:30 ص</option>
+                        <option value="11:00">11:00 ص</option>
+                        <option value="11:30">11:30 ص</option>
+                        <option value="12:00">12:00 م</option>
+                        <option value="12:30">12:30 م</option>
+                        <option value="13:00">01:00 م</option>
+                        <option value="13:30">01:30 م</option>
+                        <option value="14:00">02:00 م</option>
+                        <option value="14:30">02:30 م</option>
+                        <option value="15:00">03:00 م</option>
+                        <option value="15:30">03:30 م</option>
+                        <option value="16:00">04:00 م</option>
+                        <option value="16:30">04:30 م</option>
+                        <option value="17:00">05:00 م</option>
+                        <option value="17:30">05:30 م</option>
+                        <option value="18:00">06:00 م</option>
+                        <option value="18:30">06:30 م</option>
+                        <option value="19:00">07:00 م</option>
+                        <option value="19:30">07:30 م</option>
+                        <option value="20:00">08:00 م</option>
+                        <option value="20:30">08:30 م</option>
+                        <option value="21:00">09:00 م</option>
+                        <option value="21:30">09:30 م</option>
+                        <option value="22:00">10:00 م</option>
+                        <option value="22:30">10:30 م</option>
+                        <option value="23:00">11:00 م</option>
+                        <option value="23:30">11:30 م</option>
+                    </select>
+                </div>
             </div>
 
             <div class="modal-footer">
@@ -1007,14 +1045,15 @@
         document.getElementById('lead-form').reset();
         document.getElementById('edit-lead-index').value = "";
         
-        // إخفاء حقل الموعد وتصفير مكتبة Flatpickr
+        // إخفاء حقل الموعد وتصفير المدخلات
         document.getElementById('appointment-time-group').style.display = "none";
-        const apptInput = document.getElementById('lead-appointment-time');
-        if (apptInput._flatpickr) {
-            apptInput._flatpickr.clear();
+        const dateInput = document.getElementById('lead-appointment-date');
+        if (dateInput._flatpickr) {
+            dateInput._flatpickr.clear();
         } else {
-            apptInput.value = "";
+            dateInput.value = "";
         }
+        document.getElementById('lead-appointment-time-select').value = "12:00";
         
         document.getElementById('lead-modal').classList.add('active');
     }
@@ -1028,23 +1067,31 @@
         document.getElementById('lead-phone').value = l.phone;
         document.getElementById('lead-status').value = l.status;
 
-        // التحقق من إظهار حقل الموعد وتحديث مكتبة Flatpickr
+        // التحقق من إظهار حقل الموعد وتحديث الحقول المدمجة
         const appointmentGroup = document.getElementById('appointment-time-group');
-        const apptInput = document.getElementById('lead-appointment-time');
+        const dateInput = document.getElementById('lead-appointment-date');
+        const timeSelect = document.getElementById('lead-appointment-time-select');
+        
         if (l.status === 'Appointment Booked') {
             appointmentGroup.style.display = 'flex';
-            if (apptInput._flatpickr) {
-                apptInput._flatpickr.setDate(l.appointment_time || '');
+            const parts = (l.appointment_time || '').split(' ');
+            const appDate = parts[0] || '';
+            const appTime = parts[1] || '12:00';
+            
+            if (dateInput._flatpickr) {
+                dateInput._flatpickr.setDate(appDate);
             } else {
-                apptInput.value = l.appointment_time || '';
+                dateInput.value = appDate;
             }
+            timeSelect.value = appTime;
         } else {
             appointmentGroup.style.display = 'none';
-            if (apptInput._flatpickr) {
-                apptInput._flatpickr.clear();
+            if (dateInput._flatpickr) {
+                dateInput._flatpickr.clear();
             } else {
-                apptInput.value = '';
+                dateInput.value = '';
             }
+            timeSelect.value = '12:00';
         }
 
         document.getElementById('lead-modal').classList.add('active');
@@ -1067,11 +1114,12 @@
         const rawFullname = document.getElementById('lead-fullname').value;
         const rawPhone = document.getElementById('lead-phone').value;
         const cleanStatus = sanitize(document.getElementById('lead-status').value);
-        const rawAppTime = document.getElementById('lead-appointment-time').value;
+        const rawAppDate = document.getElementById('lead-appointment-date').value;
+        const rawAppTime = document.getElementById('lead-appointment-time-select').value;
         
         const cleanFullname = sanitize(rawFullname);
         const cleanPhone = normalizePhone(rawPhone);
-        const cleanAppTime = cleanStatus === 'Appointment Booked' ? rawAppTime : '';
+        const cleanAppTime = cleanStatus === 'Appointment Booked' && rawAppDate ? (rawAppDate + ' ' + rawAppTime) : '';
 
         const newLead = {
             fullname: cleanFullname,
@@ -1259,14 +1307,13 @@
                 .catch(err => console.error('Service Worker registration failed:', err));
         }
 
-        // تهيئة مكتبة Flatpickr للاختيار المرئي للتواريخ والمواعيد بنظام 12 ساعة عربي
-        flatpickr("#lead-appointment-time", {
-            enableTime: true,
-            dateFormat: "Y-m-d H:i", // الحفظ بنظام قياسي لمنع المشاكل
+        // تهيئة مكتبة Flatpickr للتاريخ فقط
+        flatpickr("#lead-appointment-date", {
+            enableTime: false,
+            dateFormat: "Y-m-d",
             altInput: true,
-            altFormat: "Y-m-d h:i K", // العرض للمستخدم بنظام 12 ساعة (ص/م)
-            locale: "ar", // اللغة العربية
-            time_24hr: false // استخدام نظام 12 ساعة في الساعة المنبثقة
+            altFormat: "Y-m-d",
+            locale: "ar"
         });
 
         // مستمع تغيير الحالة لإظهار حقل الموعد
@@ -1279,12 +1326,13 @@
                         appointmentGroup.style.display = 'flex';
                     } else {
                         appointmentGroup.style.display = 'none';
-                        const apptInput = document.getElementById('lead-appointment-time');
-                        if (apptInput._flatpickr) {
-                            apptInput._flatpickr.clear();
+                        const dateInput = document.getElementById('lead-appointment-date');
+                        if (dateInput._flatpickr) {
+                            dateInput._flatpickr.clear();
                         } else {
-                            apptInput.value = '';
+                            dateInput.value = '';
                         }
+                        document.getElementById('lead-appointment-time-select').value = '12:00';
                     }
                 }
             });
