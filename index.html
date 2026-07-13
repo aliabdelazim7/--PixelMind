@@ -292,18 +292,20 @@
 
         th {
             background-color: var(--bg-secondary);
-            padding: 14px 18px;
+            padding: 16px 20px;
             font-weight: 700;
             color: var(--text-secondary);
             border-bottom: 1px solid var(--border-color);
             font-size: 0.85rem;
+            white-space: nowrap;
         }
 
         td {
-            padding: 14px 18px;
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border-color);
             color: var(--text-primary);
             vertical-align: middle;
+            white-space: nowrap;
         }
 
         tr:hover td {
@@ -560,6 +562,7 @@
                 justify-content: space-between;
                 min-height: 44px;
                 font-size: 0.85rem;
+                white-space: normal !important;
             }
             td:last-child {
                 border-bottom: none;
@@ -740,7 +743,6 @@
                         <th>حالة العميل</th>
                         <th>ميعاد الحجز</th>
                         <th>تاريخ الإضافة</th>
-                        <th>الملاحظات</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -1357,24 +1359,26 @@
                 tbody.innerHTML += `
                     <tr>
                         <td class="select-col" data-label="تحديد" style="text-align: center; width: 40px;"><input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()"></td>
-                        <td data-label="الاسم بالكامل" style="font-weight: 700;">${fullnameStr}</td>
+                        <td data-label="الاسم بالكامل" style="font-weight: 700; white-space: normal;">
+                            <div>${fullnameStr}</div>
+                            ${l.notes ? `<div style="font-weight: 500; font-size: 0.75rem; color: #a3a3a3; margin-top: 4px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes}">📝 ${l.notes}</div>` : ''}
+                        </td>
                         <td data-label="رقم الهاتف" style="direction: ltr; text-align: right;">${phoneStr}</td>
                         <td data-label="واتساب">
                             <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
                                 <a href="${waUrl}" target="_blank" class="wa-link">📱 مراسلة</a>
-                                <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr}')" style="width: 35px; padding: 2px; font-size: 0.8rem; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; text-align: center;" title="إرسال رسالة جاهزة">
+                                <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr}')" style="width: 32px; padding: 2px; font-size: 0.8rem; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; text-align: center; -webkit-appearance: none; -moz-appearance: none; appearance: none;" title="إرسال رسالة جاهزة">
                                     <option value="">✍️</option>
-                                    <option value="welcome">🗣️ ترحيب عميل جديد</option>
-                                    <option value="followup">🕒 متابعة العميل</option>
-                                    <option value="appointment">📅 تذكير بالموعد</option>
-                                    <option value="offer">📄 إرسال العرض</option>
+                                    <option value="welcome">🗣️</option>
+                                    <option value="followup">🕒</option>
+                                    <option value="appointment">📅</option>
+                                    <option value="offer">📄</option>
                                 </select>
                             </div>
                         </td>
                         <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span></td>
                         <td data-label="ميعاد الحجز" style="font-weight: 700; color: #ffc107;">${appointmentTimeDisplay}</td>
                         <td data-label="تاريخ الإضافة">${createdAtStr}</td>
-                        <td data-label="الملاحظات" style="color: var(--text-secondary); font-size: 0.85rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes || ''}">${l.notes || '-'}</td>
                         <td data-label="الإجراءات">
                             <div class="action-row">
                                 <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditLeadModal(${index})">تعديل الحالة</button>
