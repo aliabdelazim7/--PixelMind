@@ -691,7 +691,7 @@
             <div class="form-group" id="appointment-time-group" style="display: none; gap: 12px; flex-direction: row;">
                 <div style="flex: 1;">
                     <label for="lead-appointment-date">تاريخ الموعد</label>
-                    <input type="text" id="lead-appointment-date" placeholder="اختر التاريخ..." style="text-align: right; direction: rtl;">
+                    <input type="text" id="lead-appointment-date" readonly placeholder="اختر التاريخ..." style="text-align: right; direction: rtl; cursor: pointer; background-color: var(--bg-primary);">
                 </div>
                 <div style="width: 140px;">
                     <label for="lead-appointment-time-select">وقت الموعد</label>
@@ -1313,7 +1313,8 @@
             dateFormat: "Y-m-d",
             altInput: true,
             altFormat: "Y-m-d",
-            locale: "ar"
+            locale: "ar",
+            allowInput: false // يمنع تماماً ظهور لوحة مفاتيح الهاتف عند الضغط
         });
 
         // مستمع تغيير الحالة لإظهار حقل الموعد
