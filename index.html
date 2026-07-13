@@ -575,6 +575,8 @@
             </div>
         </div>
         <div class="header-actions">
+            <!-- زر تثبيت التطبيق للأندرويد ومتصفح كروم -->
+            <button id="install-pwa-btn" class="btn" style="display:none; background-color:#28a745; color:white; border-color:#28a745;" onclick="installPWA()">📲 تثبيت التطبيق</button>
             <button class="btn btn-secondary" onclick="resetDefaultData()">إعادة تعيين البيانات</button>
             <button class="btn" onclick="openNewLeadModal()">+ إضافة عميل</button>
         </div>
@@ -678,6 +680,11 @@
                     <option value="Ghosted">⚫ لم يرد (اختفى)</option>
                     <option value="Not Interested">❌ غير مهتم</option>
                 </select>
+            </div>
+
+            <div class="form-group" id="appointment-time-group" style="display: none;">
+                <label for="lead-appointment-time">تاريخ ووقت الموعد</label>
+                <input type="datetime-local" id="lead-appointment-time" style="text-align: right; direction: rtl;">
             </div>
 
             <div class="modal-footer">
@@ -817,16 +824,15 @@
     }
 
     function initData() {
-        // تعيين حالة جاري المزامنة والتحميل في الخلفية
         updateDbStatus('status-connecting', 'جاري المزامنة في الخلفية...');
 
-        // 1. تحميل فوري وسريع من الذاكرة المحلية (Instant load from cache)
+        // 1. تحميل فوري وسريع من الذاكرة المحلية
         if (localStorage.getItem('meta_crm_leads_minimal')) {
             leads = JSON.parse(localStorage.getItem('meta_crm_leads_minimal'));
             calculateKPIs();
             renderLeadsTable();
+            checkUpcomingAppointments(); // تتبع المواعيد من الذاكرة المحلية فوراً
         } else {
-            // إذا كانت أول مرة فتح للموقع، نظهر عملاء ديفولت مؤقتاً لحين انتهاء التحميل
             leads = DEFAULT_LEADS;
             calculateKPIs();
             renderLeadsTable();
@@ -839,9 +845,10 @@
                 localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
                 calculateKPIs();
                 renderLeadsTable();
+                checkUpcomingAppointments();
             }).getLeads();
         } else {
-            // 2. فحص وتحديث البيانات في الخلفية من شيت جوجل (Background revalidation)
+            // 2. فحص وتحديث البيانات في الخلفية
             fetch(webAppUrl + "?action=getLeads")
                 .then(res => res.json())
                 .then(data => {
@@ -851,17 +858,16 @@
                     updateDbStatus('status-connected', 'متصل بـ Google Sheets');
                     
                     leads = Array.isArray(data) ? data : [];
-                    // تحديث الذاكرة المحلية بالبيانات المزامنة الجديدة
                     localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
                     
                     calculateKPIs();
                     renderLeadsTable();
                     checkOfflineLeadsAlert();
+                    checkUpcomingAppointments(); // تتبع المواعيد الجديدة القادمة من شيت جوجل
                 })
                 .catch(err => {
                     console.warn("تنبيه: فشل تحديث البيانات بالخلفية، سيتم الاستمرار بالوضع المحلي المتاح:", err);
                     
-                    // إظهار بنر التنبيه مع تفاصيل الخطأ فقط إن لم تكن هناك بيانات محلية سابقة
                     if (leads.length === 0 || (leads.length === 3 && leads[0].id === "L-1")) {
                         const banner = document.getElementById('connection-error-banner');
                         if (banner) {
@@ -940,13 +946,11 @@
         }
 
         leads.forEach((l, index) => {
-            // تحويل كافة المدخلات إلى نصوص لمنع الـ Crash في المتصفح إذا كانت خلية الشيت رقماً أو فارغة
             const fullnameStr = String(l.fullname || "").trim();
             const phoneStr = String(l.phone || "").trim();
             const statusStr = String(l.status || "").trim();
             const createdAtStr = String(l.created_at || "").trim();
 
-            // تخطي السطور الفارغة تماماً
             if (fullnameStr === "" && phoneStr === "") return;
 
             const matchQuery = fullnameStr.toLowerCase().includes(query) || phoneStr.includes(query);
@@ -956,12 +960,28 @@
                 const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
                 const waUrl = `https://wa.me/${phoneClean}`;
 
+                // تنسيق وعرض تاريخ ووقت الموعد
+                let statusLabel = STATUS_LABELS[statusStr] || statusStr;
+                if (statusStr === 'Appointment Booked' && l.appointment_time) {
+                    const dateObj = new Date(l.appointment_time);
+                    if (!isNaN(dateObj.getTime())) {
+                        const formattedTime = dateObj.toLocaleDateString('ar-EG', {
+                            month: 'numeric',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true
+                        });
+                        statusLabel += ` (${formattedTime})`;
+                    }
+                }
+
                 tbody.innerHTML += `
                     <tr>
                         <td data-label="الاسم بالكامل" style="font-weight: 700;">${fullnameStr}</td>
                         <td data-label="رقم الهاتف" style="direction: ltr; text-align: right;">${phoneStr}</td>
                         <td data-label="واتساب"><a href="${waUrl}" target="_blank" class="wa-link">📱 واتساب</a></td>
-                        <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${STATUS_LABELS[statusStr] || statusStr}</span></td>
+                        <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span></td>
                         <td data-label="تاريخ الإضافة">${createdAtStr}</td>
                         <td data-label="الإجراءات">
                             <div class="action-row">
@@ -979,6 +999,11 @@
         document.getElementById('lead-modal-title').innerText = "إضافة عميل جديد";
         document.getElementById('lead-form').reset();
         document.getElementById('edit-lead-index').value = "";
+        
+        // إخفاء حقل الموعد وتصفيره
+        document.getElementById('appointment-time-group').style.display = "none";
+        document.getElementById('lead-appointment-time').value = "";
+        
         document.getElementById('lead-modal').classList.add('active');
     }
 
@@ -991,6 +1016,16 @@
         document.getElementById('lead-phone').value = l.phone;
         document.getElementById('lead-status').value = l.status;
 
+        // التحقق من إظهار حقل الموعد إذا كان العميل محجوزاً له موعد
+        const appointmentGroup = document.getElementById('appointment-time-group');
+        if (l.status === 'Appointment Booked') {
+            appointmentGroup.style.display = 'flex';
+            document.getElementById('lead-appointment-time').value = l.appointment_time || '';
+        } else {
+            appointmentGroup.style.display = 'none';
+            document.getElementById('lead-appointment-time').value = '';
+        }
+
         document.getElementById('lead-modal').classList.add('active');
     }
 
@@ -1002,7 +1037,6 @@
         e.preventDefault();
         const indexStr = document.getElementById('edit-lead-index').value;
         
-        // جلب زر الحفظ وتعطيله لمنع التكرار (Double click prevention)
         const submitBtn = e.target.querySelector('button[type="submit"]');
         if (submitBtn) {
             submitBtn.disabled = true;
@@ -1011,16 +1045,18 @@
 
         const rawFullname = document.getElementById('lead-fullname').value;
         const rawPhone = document.getElementById('lead-phone').value;
+        const cleanStatus = sanitize(document.getElementById('lead-status').value);
+        const rawAppTime = document.getElementById('lead-appointment-time').value;
         
-        // تطهير المدخلات وتنسيق الرقم
         const cleanFullname = sanitize(rawFullname);
         const cleanPhone = normalizePhone(rawPhone);
-        const cleanStatus = sanitize(document.getElementById('lead-status').value);
+        const cleanAppTime = cleanStatus === 'Appointment Booked' ? rawAppTime : '';
 
         const newLead = {
             fullname: cleanFullname,
             phone: cleanPhone,
-            status: cleanStatus
+            status: cleanStatus,
+            appointment_time: cleanAppTime
         };
 
         if (isGoogleAppsScript) {
@@ -1034,9 +1070,11 @@
                     submitBtn.innerText = "حفظ";
                 }
                 leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
+                checkUpcomingAppointments();
             }).addOrUpdateLead(newLead);
         } else {
             if (indexStr !== "") {
@@ -1058,9 +1096,11 @@
                     submitBtn.innerText = "حفظ";
                 }
                 leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
+                checkUpcomingAppointments();
             })
             .catch(err => {
                 console.warn("تنبيه: فشل إرسال البيانات للـ API، سيتم الحفظ محلياً:", err);
@@ -1069,7 +1109,6 @@
                     submitBtn.innerText = "حفظ";
                 }
                 
-                // حفظ أوفلاين في التخزين المحلي المنفصل للمزامنة لاحقاً
                 let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
                 
                 if (indexStr === "") {
@@ -1097,6 +1136,7 @@
                 renderLeadsTable();
                 closeLeadModal();
                 checkOfflineLeadsAlert();
+                checkUpcomingAppointments();
             });
         }
     }
@@ -1186,6 +1226,146 @@
         });
     }
 
+    let deferredPrompt;
+
+    window.onload = function() {
+        initData();
+        
+        // تسجيل الـ Service Worker لتمكين التشغيل أوفلاين كـ PWA
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registered successfully!', reg))
+                .catch(err => console.error('Service Worker registration failed:', err));
+        }
+
+        // مستمع تغيير الحالة لإظهار حقل الموعد
+        const statusEl = document.getElementById('lead-status');
+        if (statusEl) {
+            statusEl.addEventListener('change', function(e) {
+                const appointmentGroup = document.getElementById('appointment-time-group');
+                if (appointmentGroup) {
+                    if (e.target.value === 'Appointment Booked') {
+                        appointmentGroup.style.display = 'flex';
+                    } else {
+                        appointmentGroup.style.display = 'none';
+                        document.getElementById('lead-appointment-time').value = '';
+                    }
+                }
+            });
+        }
+    };
+
+    // مستمع لتثبيت التطبيق للأندرويد ومتصفح كروم
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('install-pwa-btn');
+        if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+
+    function installPWA() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the PWA install prompt');
+            }
+            deferredPrompt = null;
+            const installBtn = document.getElementById('install-pwa-btn');
+            if (installBtn) installBtn.style.display = 'none';
+        });
+    }
+
+    // دالة للتحقق من المواعيد القريبة وإصدار التنبيهات
+    function checkUpcomingAppointments() {
+        if (!Array.isArray(leads)) return;
+
+        // طلب صلاحية الإشعارات من المتصفح إذا لم تحدد بعد
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        const now = new Date();
+        const todayStr = now.toISOString().split('T')[0];
+
+        leads.forEach(l => {
+            if (l.status === 'Appointment Booked' && l.appointment_time) {
+                const apptDate = new Date(l.appointment_time);
+                const apptDateStr = apptDate.toISOString().split('T')[0];
+
+                if (apptDateStr === todayStr) {
+                    const diffMs = apptDate - now;
+                    const diffMins = Math.round(diffMs / 60000);
+
+                    // إرسال تنبيه إذا كان الموعد اليوم وفي حدود ساعة قادمة أو مضى عليه 30 دقيقة
+                    if (diffMins >= -30 && diffMins <= 60) {
+                        showAppointmentReminder(l, diffMins);
+                    }
+                }
+            }
+        });
+    }
+
+    // دالة لعرض التنبيه كإشعار نظامي عائم في زاوية الشاشة
+    function showAppointmentReminder(lead, diffMins) {
+        const timeStr = new Date(lead.appointment_time).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+        const title = `📅 تذكير بموعد عميل اليوم`;
+        let message = "";
+
+        if (diffMins < 0) {
+            message = `بدأ موعد العميل ${lead.fullname} منذ ${Math.abs(diffMins)} دقيقة (الساعة ${timeStr}).`;
+        } else if (diffMins === 0) {
+            message = `حان الآن موعد العميل ${lead.fullname} (الساعة ${timeStr})!`;
+        } else {
+            message = `لديك موعد بعد ${diffMins} دقيقة مع العميل ${lead.fullname} (الساعة ${timeStr}).`;
+        }
+
+        // 1. إظهار إشعار النظام (Push Notification) إذا كانت الصلاحية ممنوحة
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification(title, {
+                body: message,
+                icon: 'icon-192.png'
+            });
+        }
+
+        // 2. إظهار بنر عائم داخل واجهة النظام لضمان لفت انتباه المستخدم
+        const reminderContainer = document.getElementById('reminder-container') || createReminderContainer();
+        const alertId = `reminder-${lead.id}-${Math.floor(Math.random() * 1000)}`;
+        if (!document.getElementById(alertId)) {
+            const alertEl = document.createElement('div');
+            alertEl.id = alertId;
+            alertEl.style = "background-color: #121212; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-right: 4px solid #ffc107; animation: slide-in 0.3s ease-out;";
+            alertEl.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.5rem;">📅</span>
+                    <div>
+                        <strong style="color: #ffc107; font-size: 0.95rem; font-family: 'Cairo'; display: block;">${title}</strong>
+                        <span style="color: #ffffff; font-size: 0.85rem; font-family: 'Cairo';">${message}</span>
+                    </div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #a3a3a3; cursor: pointer; font-size: 1.2rem; font-weight: bold; font-family: 'Cairo'; padding: 4px 8px; margin-right: 12px;">✕</button>
+            `;
+            reminderContainer.appendChild(alertEl);
+        }
+    }
+
+    function createReminderContainer() {
+        const el = document.createElement('div');
+        el.id = 'reminder-container';
+        el.style = "position: fixed; bottom: 20px; right: 20px; z-index: 1100; max-width: 350px; width: calc(100% - 40px);";
+        document.body.appendChild(el);
+        
+        // إضافة أنيميشن للظهور للبنر العائم
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes slide-in {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        return el;
+    }
     window.onload = function() {
         initData();
         // تسجيل الـ Service Worker لتمكين التشغيل أوفلاين كـ PWA

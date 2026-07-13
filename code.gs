@@ -71,7 +71,8 @@ function getLeads() {
         fullname: row[1] || "",
         phone: row[2] || "",
         status: row[3] || "",
-        created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : ""
+        created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+        appointment_time: row[5] || "" // تاريخ ووقت الموعد المخزن في العمود السادس (F)
       });
     }
     return leads;
@@ -103,16 +104,16 @@ function addOrUpdateLead(lead) {
       sheet.getRange(rowNum, 2).setValue(lead.fullname);
       sheet.getRange(rowNum, 3).setValue(lead.phone);
       sheet.getRange(rowNum, 4).setValue(lead.status);
+      sheet.getRange(rowNum, 6).setValue(lead.appointment_time || ""); // حفظ الموعد في العمود السادس (F)
     } else {
-      // إذا لم يعثر عليه (حالة شاذة)، نقوم بإضافته كجديد
       var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-      sheet.appendRow([lead.id, lead.fullname, lead.phone, lead.status, dateStr]);
+      sheet.appendRow([lead.id, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
     }
   } else {
     // إنشاء معرف فريد للعميل الجديد
     var uniqueId = "L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000);
     var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-    sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr]);
+    sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
   }
   
   return getLeads(); 
@@ -134,11 +135,11 @@ function checkAndInitHeaders(sheet) {
   
   // إذا كان الشيت فارغاً تماماً
   if (lastRow === 0 || (lastRow === 1 && sheet.getRange(1, 1).getValue() === "")) {
-    // كتابة العناوين باللغة العربية مع إدراج المعرف الفريد في العمود الأول
-    sheet.getRange(1, 1, 1, 5).setValues([["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة"]]);
+    // كتابة العناوين باللغة العربية مع إدراج المعرف الفريد وتاريخ الموعد
+    sheet.getRange(1, 1, 1, 6).setValues([["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة", "تاريخ ووقت الموعد"]]);
     
-    // تنسيق احترافي للصف الأول (عريض، خلفية رمادية فاتحة، محاذاة في المنتصف)
-    var headerRange = sheet.getRange(1, 1, 1, 5);
+    // تنسيق الصف الأول (عريض، خلفية رمادية فاتحة، محاذاة في المنتصف)
+    var headerRange = sheet.getRange(1, 1, 1, 6);
     headerRange.setFontWeight("bold")
                .setBackground("#efefef")
                .setHorizontalAlignment("center");
@@ -147,6 +148,6 @@ function checkAndInitHeaders(sheet) {
     sheet.setFrozenRows(1);
     
     // ضبط تلقائي لعرض الأعمدة لتناسب حجم النصوص
-    sheet.autoResizeColumns(1, 5);
+    sheet.autoResizeColumns(1, 6);
   }
 }
