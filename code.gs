@@ -67,7 +67,6 @@ function getLeads() {
     
     for (var i = 1; i < data.length; i++) {
       var row = data[i];
-      // تخطي الصفوف الفارغة تماماً في شيت جوجل
       if (!row[0] && !row[1] && !row[2]) continue;
       
       var appTimeVal = "";
@@ -92,7 +91,8 @@ function getLeads() {
         phone: row[2] || "",
         status: row[3] || "",
         created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
-        appointment_time: appTimeVal
+        appointment_time: appTimeVal,
+        notes: row[6] || "" // قراءة حقل الملاحظات من العمود السابع (G)
       });
     }
     return leads;
@@ -125,6 +125,7 @@ function addOrUpdateLead(lead) {
       sheet.getRange(rowNum, 3).setValue(lead.phone);
       sheet.getRange(rowNum, 4).setValue(lead.status);
       sheet.getRange(rowNum, 6).setValue(lead.appointment_time || ""); // حفظ الموعد في العمود السادس (F)
+      sheet.getRange(rowNum, 7).setValue(lead.notes || ""); // حفظ الملاحظات في العمود السابع (G)
       return getLeads();
     }
   }
@@ -135,10 +136,10 @@ function addOrUpdateLead(lead) {
     var sheetFullname = String(data[i][1]).trim();
     var sheetPhone = String(data[i][2]).trim();
     if (sheetFullname === String(lead.fullname).trim() && sheetPhone === String(lead.phone).trim()) {
-      // العميل موجود بالفعل بنفس الاسم ورقم الهاتف! نقوم بتحديث حالته وموعده فقط لمنع التكرار
       var rowNum = i + 1;
       sheet.getRange(rowNum, 4).setValue(lead.status);
       sheet.getRange(rowNum, 6).setValue(lead.appointment_time || "");
+      sheet.getRange(rowNum, 7).setValue(lead.notes || ""); // تحديث الملاحظات في العمود السابع (G)
       return getLeads();
     }
   }
@@ -146,7 +147,7 @@ function addOrUpdateLead(lead) {
   // 3. إنشاء معرف فريد للعميل الجديد وإضافته كصف جديد
   var uniqueId = lead.id || ("L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000));
   var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-  sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
+  sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || "", lead.notes || ""]);
   
   return getLeads(); 
 }
@@ -167,20 +168,15 @@ function checkAndInitHeaders(sheet) {
   
   // إذا كان الشيت فارغاً تماماً
   if (lastRow === 0 || (lastRow === 1 && sheet.getRange(1, 1).getValue() === "")) {
-    // كتابة العناوين باللغة العربية مع إدراج المعرف الفريد وتاريخ الموعد
-    sheet.getRange(1, 1, 1, 6).setValues([["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة", "تاريخ ووقت الموعد"]]);
+    sheet.getRange(1, 1, 1, 7).setValues([["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة", "تاريخ ووقت الموعد", "الملاحظات"]]);
     
-    // تنسيق الصف الأول (عريض، خلفية رمادية فاتحة، محاذاة في المنتصف)
-    var headerRange = sheet.getRange(1, 1, 1, 6);
+    var headerRange = sheet.getRange(1, 1, 1, 7);
     headerRange.setFontWeight("bold")
                .setBackground("#efefef")
                .setHorizontalAlignment("center");
                
-    // تجميد الصف الأول ليبقى ظاهراً أثناء التمرير
     sheet.setFrozenRows(1);
-    
-    // ضبط تلقائي لعرض الأعمدة لتناسب حجم النصوص
-    sheet.autoResizeColumns(1, 6);
+    sheet.autoResizeColumns(1, 7);
   }
 }
 
@@ -192,7 +188,6 @@ function addLeadsBulk(newLeads) {
   var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
   var data = sheet.getDataRange().getValues();
   
-  // بناء خريطة للموجودين لتفادي التكرار بسرعة
   var existing = {};
   for (var i = 1; i < data.length; i++) {
     var key = String(data[i][1]).trim() + "_" + String(data[i][2]).trim();
@@ -203,8 +198,8 @@ function addLeadsBulk(newLeads) {
     var key = String(lead.fullname).trim() + "_" + String(lead.phone).trim();
     if (!existing[key]) {
       var uniqueId = lead.id || ("L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000));
-      sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status || "New Lead", dateStr, lead.appointment_time || ""]);
-      existing[key] = true; // تفادي التكرار حتى ضمن الدفعة المضافة نفسها
+      sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status || "New Lead", dateStr, lead.appointment_time || "", lead.notes || ""]);
+      existing[key] = true;
     }
   });
   

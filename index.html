@@ -673,6 +673,7 @@
                         <th>حالة العميل</th>
                         <th>ميعاد الحجز</th>
                         <th>تاريخ الإضافة</th>
+                        <th>الملاحظات</th>
                         <th>الإجراءات</th>
                     </tr>
                 </thead>
@@ -873,6 +874,11 @@
                         <option value="23:30">11:30 م</option>
                     </select>
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label for="lead-notes">📝 الملاحظات وسجل المتابعة</label>
+                <textarea id="lead-notes" rows="3" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none; text-align: right; resize: vertical;" placeholder="أضف ملاحظات المتابعة وتفاصيل العميل هنا..."></textarea>
             </div>
 
             <div class="modal-footer">
@@ -1191,10 +1197,22 @@
                         <td class="select-col" data-label="تحديد" style="text-align: center; width: 40px;"><input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()"></td>
                         <td data-label="الاسم بالكامل" style="font-weight: 700;">${fullnameStr}</td>
                         <td data-label="رقم الهاتف" style="direction: ltr; text-align: right;">${phoneStr}</td>
-                        <td data-label="واتساب"><a href="${waUrl}" target="_blank" class="wa-link">📱 واتساب</a></td>
+                        <td data-label="واتساب">
+                            <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                                <a href="${waUrl}" target="_blank" class="wa-link">📱 مراسلة</a>
+                                <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr}')" style="width: 35px; padding: 2px; font-size: 0.8rem; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; text-align: center;" title="إرسال رسالة جاهزة">
+                                    <option value="">✍️</option>
+                                    <option value="welcome">🗣️ ترحيب عميل جديد</option>
+                                    <option value="followup">🕒 متابعة العميل</option>
+                                    <option value="appointment">📅 تذكير بالموعد</option>
+                                    <option value="offer">📄 إرسال العرض</option>
+                                </select>
+                            </div>
+                        </td>
                         <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span></td>
                         <td data-label="ميعاد الحجز" style="font-weight: 700; color: #ffc107;">${appointmentTimeDisplay}</td>
                         <td data-label="تاريخ الإضافة">${createdAtStr}</td>
+                        <td data-label="الملاحظات" style="color: var(--text-secondary); font-size: 0.85rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes || ''}">${l.notes || '-'}</td>
                         <td data-label="الإجراءات">
                             <div class="action-row">
                                 <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditLeadModal(${index})">تعديل الحالة</button>
@@ -1211,6 +1229,7 @@
         document.getElementById('lead-modal-title').innerText = "إضافة عميل جديد";
         document.getElementById('lead-form').reset();
         document.getElementById('edit-lead-index').value = "";
+        document.getElementById('lead-notes').value = "";
         
         // إخفاء حقل الموعد وتحديد قيم اليوم الحالي تلقائياً
         document.getElementById('appointment-time-group').style.display = "none";
@@ -1265,6 +1284,7 @@
             timeSelect.value = '12:00';
         }
 
+        document.getElementById('lead-notes').value = l.notes || "";
         document.getElementById('lead-modal').classList.add('active');
     }
 
@@ -1288,6 +1308,7 @@
         const rawAppDay = document.getElementById('lead-appointment-day').value;
         const rawAppMonth = document.getElementById('lead-appointment-month').value;
         const rawAppTime = document.getElementById('lead-appointment-time-select').value;
+        const cleanNotes = sanitize(document.getElementById('lead-notes').value);
         
         const cleanFullname = sanitize(rawFullname);
         const cleanPhone = normalizePhone(rawPhone);
@@ -1301,7 +1322,8 @@
             fullname: cleanFullname,
             phone: cleanPhone,
             status: cleanStatus,
-            appointment_time: cleanAppTime
+            appointment_time: cleanAppTime,
+            notes: cleanNotes
         };
 
         if (isGoogleAppsScript) {
@@ -2003,6 +2025,28 @@
                 })
             }).catch(err => console.warn(`فشل إرسال إشعار تلجرام للمعرف ${chatId}:`, err));
         });
+    }
+
+    // دالة إرسال قوالب رسائل الواتساب الجاهزة لتوفير الوقت وسرعة المتابعة
+    function sendWhatsAppTemplate(selectEl, phone, fullname) {
+        const val = selectEl.value;
+        if (!val) return;
+        
+        const templates = {
+            welcome: `أهلاً بك يا فندم ${fullname}، تواصلنا معك بخصوص طلبك ونحن في خدمتك لتقديم كافة التفاصيل والرد على استفساراتك.`,
+            followup: `السلام عليكم يا فندم ${fullname}، بنتابع مع حضرتك بخصوص العرض والتفاصيل السابقة التي ناقشناها. هل هناك أي استفسار يمكننا مساعدتك به؟`,
+            appointment: `أهلاً بك يا فندم ${fullname}، تذكير بموعدنا اليوم إن شاء الله. يسعدنا تشريفك لنا وتواجدك في الموعد المحدد.`,
+            offer: `أهلاً بك يا فندم ${fullname}، نرسل لحضرتك تفاصيل العرض والأسعار بخصوص استفسارك الكريم. يسعدنا تواصلك معنا.`
+        };
+        
+        const text = templates[val];
+        if (text) {
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+        
+        // إعادة القائمة للخيار الافتراضي فارغ
+        selectEl.value = "";
     }
 
 </script>
