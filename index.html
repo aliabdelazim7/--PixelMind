@@ -16,6 +16,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Flatpickr CSS (Dark Theme) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css">
+    <!-- Flatpickr JS & Arabic Localization -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ar.js"></script>
     <style>
         :root {
             --bg-primary: #0b0b0b;
@@ -684,7 +690,8 @@
 
             <div class="form-group" id="appointment-time-group" style="display: none;">
                 <label for="lead-appointment-time">تاريخ ووقت الموعد</label>
-                <input type="datetime-local" id="lead-appointment-time" style="text-align: right; direction: rtl;">
+                <!-- تغيير الحقل ليدعم مكتبة Flatpickr للاختيار المرئي بدلاً من الكتابة -->
+                <input type="text" id="lead-appointment-time" placeholder="اختر التاريخ والوقت الموعد..." style="text-align: right; direction: rtl;">
             </div>
 
             <div class="modal-footer">
@@ -960,12 +967,12 @@
                 const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
                 const waUrl = `https://wa.me/${phoneClean}`;
 
-                // تنسيق وعرض تاريخ ووقت الموعد
+                // تنسيق وعرض تاريخ ووقت الموعد بنظام 12 ساعة باللغة العربية
                 let statusLabel = STATUS_LABELS[statusStr] || statusStr;
                 if (statusStr === 'Appointment Booked' && l.appointment_time) {
-                    const dateObj = new Date(l.appointment_time);
+                    const dateObj = new Date(l.appointment_time.replace(' ', 'T'));
                     if (!isNaN(dateObj.getTime())) {
-                        const formattedTime = dateObj.toLocaleDateString('ar-EG', {
+                        const formattedTime = dateObj.toLocaleString('ar-EG', {
                             month: 'numeric',
                             day: 'numeric',
                             hour: '2-digit',
@@ -1000,9 +1007,14 @@
         document.getElementById('lead-form').reset();
         document.getElementById('edit-lead-index').value = "";
         
-        // إخفاء حقل الموعد وتصفيره
+        // إخفاء حقل الموعد وتصفير مكتبة Flatpickr
         document.getElementById('appointment-time-group').style.display = "none";
-        document.getElementById('lead-appointment-time').value = "";
+        const apptInput = document.getElementById('lead-appointment-time');
+        if (apptInput._flatpickr) {
+            apptInput._flatpickr.clear();
+        } else {
+            apptInput.value = "";
+        }
         
         document.getElementById('lead-modal').classList.add('active');
     }
@@ -1016,14 +1028,23 @@
         document.getElementById('lead-phone').value = l.phone;
         document.getElementById('lead-status').value = l.status;
 
-        // التحقق من إظهار حقل الموعد إذا كان العميل محجوزاً له موعد
+        // التحقق من إظهار حقل الموعد وتحديث مكتبة Flatpickr
         const appointmentGroup = document.getElementById('appointment-time-group');
+        const apptInput = document.getElementById('lead-appointment-time');
         if (l.status === 'Appointment Booked') {
             appointmentGroup.style.display = 'flex';
-            document.getElementById('lead-appointment-time').value = l.appointment_time || '';
+            if (apptInput._flatpickr) {
+                apptInput._flatpickr.setDate(l.appointment_time || '');
+            } else {
+                apptInput.value = l.appointment_time || '';
+            }
         } else {
             appointmentGroup.style.display = 'none';
-            document.getElementById('lead-appointment-time').value = '';
+            if (apptInput._flatpickr) {
+                apptInput._flatpickr.clear();
+            } else {
+                apptInput.value = '';
+            }
         }
 
         document.getElementById('lead-modal').classList.add('active');
@@ -1238,6 +1259,16 @@
                 .catch(err => console.error('Service Worker registration failed:', err));
         }
 
+        // تهيئة مكتبة Flatpickr للاختيار المرئي للتواريخ والمواعيد بنظام 12 ساعة عربي
+        flatpickr("#lead-appointment-time", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i", // الحفظ بنظام قياسي لمنع المشاكل
+            altInput: true,
+            altFormat: "Y-m-d h:i K", // العرض للمستخدم بنظام 12 ساعة (ص/م)
+            locale: "ar", // اللغة العربية
+            time_24hr: false // استخدام نظام 12 ساعة في الساعة المنبثقة
+        });
+
         // مستمع تغيير الحالة لإظهار حقل الموعد
         const statusEl = document.getElementById('lead-status');
         if (statusEl) {
@@ -1248,7 +1279,12 @@
                         appointmentGroup.style.display = 'flex';
                     } else {
                         appointmentGroup.style.display = 'none';
-                        document.getElementById('lead-appointment-time').value = '';
+                        const apptInput = document.getElementById('lead-appointment-time');
+                        if (apptInput._flatpickr) {
+                            apptInput._flatpickr.clear();
+                        } else {
+                            apptInput.value = '';
+                        }
                     }
                 }
             });
