@@ -533,12 +533,9 @@
                 font-size: 0.85rem;
             }
             .stats-dashboard-grid {
-                grid-template-columns: 1fr !important;
+                grid-template-columns: 1fr;
             }
-        }
-
-        @media (max-width: 600px) {
-            /* تحويل الجدول إلى كروت لتصفح مريح على الموبايل */
+            @media (max-width: 768px) {
             table, thead, tbody, th, td, tr {
                 display: block;
             }
@@ -548,53 +545,99 @@
                 left: -9999px;
             }
             tr {
-                margin-bottom: 16px;
+                margin-bottom: 20px;
                 border: 1px solid var(--border-color);
-                border-radius: 8px;
+                border-radius: 12px;
                 background-color: var(--bg-card);
-                padding: 12px;
+                padding: 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
             }
             td {
                 border: none;
-                border-bottom: 1px solid rgba(255,255,255,0.05);
-                padding: 12px 6px;
+                padding: 0 !important;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                min-height: 44px;
-                font-size: 0.85rem;
+                min-height: auto;
+                font-size: 0.9rem;
                 white-space: normal !important;
             }
-            td:last-child {
-                border-bottom: none;
-            }
             td::before {
-                content: attr(data-label);
+                content: attr(data-label) ": ";
                 font-weight: 700;
                 color: var(--text-secondary);
-                margin-left: 10px;
+                margin-left: 8px;
                 flex-shrink: 0;
             }
-            .select-col {
-                border-bottom: 1px dashed var(--border-color) !important;
-                padding-bottom: 8px !important;
-                margin-bottom: 8px !important;
-            }
-            td[data-label="الإجراءات"] {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: none !important;
-                padding-top: 12px !important;
-            }
+            
+            /* إخفاء الليبلز غير الضرورية لترتيب وتوسيع الكارت */
+            td[data-label="تحديد"]::before,
+            td[data-label="الاسم بالكامل"]::before,
+            td[data-label="رقم الهاتف"]::before,
+            td[data-label="واتساب"]::before,
+            td[data-label="الحالة"]::before,
             td[data-label="الإجراءات"]::before {
                 display: none !important;
+            }
+
+            /* تنسيق وحساب تموضع العناصر العلوية (الهيدر) */
+            td[data-label="تحديد"] {
+                display: inline-flex;
+                width: auto;
+                align-self: flex-start;
+                margin-bottom: -22px;
+                z-index: 5;
+            }
+            td[data-label="الاسم بالكامل"] {
+                padding-right: 26px !important;
+                font-size: 1.1rem;
+                font-weight: 800;
+                color: var(--text-primary);
+                display: block;
+                text-align: right;
+            }
+            td[data-label="الحالة"] {
+                align-self: flex-start;
+                margin-top: -26px; /* رفع البادج لليسار المقابل للاسم */
+            }
+
+            /* تنسيق الحقول الوسطى */
+            td[data-label="رقم الهاتف"] {
+                justify-content: flex-start;
+                gap: 6px;
+                color: var(--text-secondary);
+                margin-top: 10px;
+                font-weight: 600;
+            }
+            td[data-label="رقم الهاتف"]::before {
+                content: "📞" !important;
+                display: inline-block !important;
+                font-size: 0.85rem;
+            }
+            td[data-label="واتساب"] {
+                justify-content: flex-start;
+                margin-top: 4px;
+            }
+            td[data-label="ميعاد الحجز"], td[data-label="تاريخ الإضافة"] {
+                border-top: 1px dashed rgba(255,255,255,0.05);
+                padding-top: 8px !important;
+                margin-top: 4px;
+            }
+
+            /* تنسيق الأزرار السفلية */
+            td[data-label="الإجراءات"] {
+                border-top: 1px solid var(--border-color);
+                padding-top: 12px !important;
+                margin-top: 12px;
+                width: 100%;
             }
             .action-row {
                 width: 100% !important;
                 display: flex !important;
                 gap: 8px !important;
-                justify-content: space-between !important;
             }
             .action-row .btn {
                 flex: 1 !important;
@@ -604,7 +647,9 @@
                 font-size: 0.85rem !important;
             }
         }
+    </style>
 
+    <style>
         /* تنسيقات شبكة كروت العملاء المدمجة لتقليل السكرول الطويل */
         .leads-grid-container {
             display: grid;
