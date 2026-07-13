@@ -508,6 +508,12 @@
             }
         }
 
+        @media (max-width: 768px) {
+            .stats-dashboard-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
         @media (max-width: 600px) {
             /* تحويل الجدول إلى كروت لتصفح مريح على الموبايل */
             table, thead, tbody, th, td, tr {
@@ -638,10 +644,34 @@
 
     <!-- TAB: Charts -->
     <div id="charts-tab" class="tab-content">
-        <div class="chart-card">
-            <div class="chart-title">توزيع العملاء على مراحل البيع (القمح البيعي)</div>
-            <div class="chart-container">
-                <canvas id="funnelChart"></canvas>
+        <div class="stats-dashboard-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+            <!-- القمع البيعي -->
+            <div class="chart-card">
+                <div class="chart-title">📍 مراحل القمع البيعي للعملاء (Pipeline Funnel)</div>
+                <div class="chart-container">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- الصفقات ومعدل التحويل -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="chart-card" style="min-height: 250px;">
+                    <div class="chart-title">📊 تحليل نتائج الصفقات النهائية</div>
+                    <div class="chart-container">
+                        <canvas id="conversionDoughnutChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card" style="min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                    <div class="chart-title">🎯 معدل نجاح الصفقات (Conversion Rate)</div>
+                    <div style="position: relative; width: 100px; height: 100px; margin-top: 10px;">
+                        <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
+                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#262626" stroke-width="3" />
+                            <path id="conversion-progress-path" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="0, 100" style="transition: stroke-dasharray 0.6s ease-out;" />
+                        </svg>
+                        <div id="conversion-rate-percentage" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.25rem; font-weight: 800; color: #fff;">0%</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -1334,14 +1364,30 @@
     }
 
     let funnelChartObj = null;
+    let conversionDoughnutChartObj = null;
 
     function renderCharts() {
         if (funnelChartObj) funnelChartObj.destroy();
+        if (conversionDoughnutChartObj) conversionDoughnutChartObj.destroy();
 
+        // 1. القمع البيعي الملون
         const statuses = ['New Lead', 'Contacted', 'Follow Up Required', 'Appointment Booked', 'Proposal Sent', 'Negotiating', 'Won'];
         const arStatusLabels = ['عميل جديد', 'تم الاتصال', 'يحتاج متابعة', 'مجدول موعد', 'أُرسل العرض', 'تفاوض', 'تم البيع'];
-        
         const funnelData = statuses.map(s => leads.filter(l => l.status === s).length);
+
+        const funnelColors = [
+            'rgba(248, 249, 250, 0.4)',  // New Lead
+            'rgba(0, 123, 255, 0.4)',    // Contacted
+            'rgba(253, 126, 20, 0.4)',   // Follow Up Required
+            'rgba(111, 66, 193, 0.4)',   // Appointment Booked
+            'rgba(232, 62, 140, 0.4)',   // Proposal Sent
+            'rgba(255, 193, 7, 0.4)',    // Negotiating
+            'rgba(255, 255, 255, 0.9)'   // Won
+        ];
+        
+        const funnelBorders = [
+            '#f8f9fa', '#007bff', '#fd7e14', '#6f42c1', '#e83e8c', '#ffc107', '#ffffff'
+        ];
 
         const ctxFunnel = document.getElementById('funnelChart').getContext('2d');
         funnelChartObj = new Chart(ctxFunnel, {
@@ -1351,10 +1397,11 @@
                 datasets: [{
                     label: 'عدد العملاء',
                     data: funnelData,
-                    backgroundColor: '#ffffff',
-                    borderColor: '#ffffff',
-                    borderWidth: 1,
-                    barThickness: 35
+                    backgroundColor: funnelColors,
+                    borderColor: funnelBorders,
+                    borderWidth: 1.5,
+                    borderRadius: 4,
+                    barThickness: 30
                 }]
             },
             options: {
@@ -1364,11 +1411,75 @@
                     legend: { display: false }
                 },
                 scales: {
-                    x: { grid: { display: false }, ticks: { color: '#a3a3a3', font: { family: 'Cairo', size: 12 } } },
-                    y: { grid: { color: '#262626' }, ticks: { color: '#a3a3a3', stepSize: 1, font: { family: 'Cairo' } } }
+                    x: { grid: { display: false }, ticks: { color: '#a3a3a3', font: { family: 'Cairo', size: 11, weight: 'bold' } } },
+                    y: { grid: { color: '#222' }, ticks: { color: '#a3a3a3', stepSize: 1, font: { family: 'Cairo' } } }
                 }
             }
         });
+
+        // 2. تحليل الصفقات النهائي (الربح/الخسارة/التجاهل)
+        const outcomeStatuses = ['Won', 'Lost', 'Ghosted', 'Not Interested'];
+        const outcomeLabels = ['تم البيع', 'خسرنا الصفقة', 'لم يرد (اختفى)', 'غير مهتم'];
+        const outcomeData = outcomeStatuses.map(s => leads.filter(l => l.status === s).length);
+        
+        const outcomeColors = [
+            '#ffffff',                  // Won
+            'rgba(220, 53, 69, 0.7)',   // Lost
+            'rgba(108, 117, 125, 0.6)', // Ghosted
+            'rgba(52, 58, 64, 0.6)'     // Not Interested
+        ];
+
+        const ctxDoughnut = document.getElementById('conversionDoughnutChart').getContext('2d');
+        conversionDoughnutChartObj = new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: outcomeLabels,
+                datasets: [{
+                    data: outcomeData,
+                    backgroundColor: outcomeColors,
+                    borderColor: '#181818',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#a3a3a3',
+                            font: { family: 'Cairo', size: 11, weight: 'bold' },
+                            boxWidth: 12
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // 3. حساب وتحديث معدل التحويل البيعي (Conversion Rate)
+        const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+        const totalCount = validLeads.length;
+        const wonCount = validLeads.filter(l => l.status === 'Won').length;
+        
+        const rate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
+        
+        const progressPath = document.getElementById('conversion-progress-path');
+        const percentageText = document.getElementById('conversion-rate-percentage');
+        
+        if (progressPath && percentageText) {
+            percentageText.innerText = rate + '%';
+            progressPath.setAttribute('stroke-dasharray', `${rate}, 100`);
+            
+            if (rate >= 40) {
+                progressPath.setAttribute('stroke', '#28a745');
+            } else if (rate >= 15) {
+                progressPath.setAttribute('stroke', '#ffc107');
+            } else {
+                progressPath.setAttribute('stroke', '#dc3545');
+            }
+        }
     }
 
     let deferredPrompt;
