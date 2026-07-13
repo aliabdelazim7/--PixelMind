@@ -624,6 +624,7 @@
                         <th>رقم الهاتف</th>
                         <th>مراسلة سريعة</th>
                         <th>حالة العميل</th>
+                        <th>ميعاد الحجز</th>
                         <th>تاريخ الإضافة</th>
                         <th>الإجراءات</th>
                     </tr>
@@ -1080,10 +1081,11 @@
 
                 // تنسيق وعرض تاريخ ووقت الموعد بنظام 12 ساعة باللغة العربية
                 let statusLabel = STATUS_LABELS[statusStr] || statusStr;
+                let appointmentTimeDisplay = '-';
                 if (statusStr === 'Appointment Booked' && l.appointment_time) {
                     const formattedTime = formatAppointmentTimeArabic(l.appointment_time);
                     if (formattedTime) {
-                        statusLabel += ` (${formattedTime})`;
+                        appointmentTimeDisplay = formattedTime;
                     }
                 }
 
@@ -1093,6 +1095,7 @@
                         <td data-label="رقم الهاتف" style="direction: ltr; text-align: right;">${phoneStr}</td>
                         <td data-label="واتساب"><a href="${waUrl}" target="_blank" class="wa-link">📱 واتساب</a></td>
                         <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span></td>
+                        <td data-label="ميعاد الحجز" style="font-weight: 700; color: #ffc107;">${appointmentTimeDisplay}</td>
                         <td data-label="تاريخ الإضافة">${createdAtStr}</td>
                         <td data-label="الإجراءات">
                             <div class="action-row">
