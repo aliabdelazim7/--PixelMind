@@ -25,6 +25,10 @@ function doPost(e) {
       result = addOrUpdateLead(requestData.lead);
     } else if (action === 'delete') {
       result = deleteLead(requestData.leadId);
+    } else if (action === 'addBulk') {
+      result = addLeadsBulk(requestData.leads);
+    } else if (action === 'deleteBulk') {
+      result = deleteLeadsBulk(requestData.leadIds);
     } else {
       result = { error: 'Action parameter invalid' };
     }
@@ -178,4 +182,179 @@ function checkAndInitHeaders(sheet) {
     // ضبط تلقائي لعرض الأعمدة لتناسب حجم النصوص
     sheet.autoResizeColumns(1, 6);
   }
+}
+
+// دالة لإضافة كمية كبيرة من العملاء دفعة واحدة مع تفادي التكرار
+function addLeadsBulk(newLeads) {
+  var sheet = getTargetSheet();
+  checkAndInitHeaders(sheet);
+  
+  var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  var data = sheet.getDataRange().getValues();
+  
+  // بناء خريطة للموجودين لتفادي التكرار بسرعة
+  var existing = {};
+  for (var i = 1; i < data.length; i++) {
+    var key = String(data[i][1]).trim() + "_" + String(data[i][2]).trim();
+    existing[key] = true;
+  }
+  
+  newLeads.forEach(function(lead) {
+    var key = String(lead.fullname).trim() + "_" + String(lead.phone).trim();
+    if (!existing[key]) {
+      var uniqueId = lead.id || ("L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000));
+      sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status || "New Lead", dateStr, lead.appointment_time || ""]);
+      existing[key] = true; // تفادي التكرار حتى ضمن الدفعة المضافة نفسها
+    }
+  });
+  
+  return getLeads();
+}
+
+// دالة لحذف كمية من العملاء دفعة واحدة (من الأسفل للأعلى لتفادي تغير الفهارس)
+function deleteLeadsBulk(leadIds) {
+  var sheet = getTargetSheet();
+  var data = sheet.getDataRange().getValues();
+  
+  for (var i = data.length - 1; i >= 1; i--) {
+    var rowId = String(data[i][0]);
+    if (leadIds.indexOf(rowId) !== -1) {
+      sheet.deleteRow(i + 1);
+    }
+  }
+  return getLeads();
+}
+
+// ==================== التقرير اليومي التلقائي ====================
+
+// دالة تشغيل وإعداد مشغل التقرير اليومي تلقائياً عند فتح الشيت
+function onOpen() {
+  try {
+    setupDailyReportTrigger();
+  } catch(e) {
+    Logger.log("فشل إعداد مشغل التقرير اليومي: " + e.toString());
+  }
+}
+
+// تثبيت مشغل يومي تلقائي عند منتصف الليل
+function setupDailyReportTrigger() {
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'sendDailyReportTelegram') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  
+  // إنشاء مشغل يعمل كل يوم في تمام الساعة 12 منتصف الليل بتوقيت السكربت
+  ScriptApp.newTrigger('sendDailyReportTelegram')
+           .timeBased()
+           .everyDays(1)
+           .atHour(0)
+           .create();
+}
+
+// دالة تجميع وإرسال التقرير اليومي
+function sendDailyReportTelegram() {
+  try {
+    var sheet = getTargetSheet();
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) return;
+    
+    // حساب تاريخ الأمس المنقضي
+    var yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    var targetDateStr = Utilities.formatDate(yesterday, Session.getScriptTimeZone(), "yyyy-MM-dd");
+    
+    var addedToday = 0;
+    var statusCounts = {};
+    
+    for (var i = 1; i < data.length; i++) {
+      var rowDate = "";
+      if (data[i][4]) {
+        // فحص صيغة التاريخ
+        try {
+          rowDate = Utilities.formatDate(new Date(data[i][4]), Session.getScriptTimeZone(), "yyyy-MM-dd");
+        } catch(err) {
+          rowDate = String(data[i][4]).split(" ")[0];
+        }
+      }
+      
+      if (rowDate === targetDateStr) {
+        addedToday++;
+        var status = data[i][3] || "New Lead";
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      }
+    }
+    
+    var text = "📅 <b>التقرير اليومي ليد فلو - " + targetDateStr + "</b>\n\n" +
+               "➕ <b>العملاء الجدد المضافين اليوم:</b> " + addedToday + "\n";
+               
+    if (addedToday > 0) {
+      text += "\n📊 <b>تصنيف العملاء الجدد اليوم:</b>\n";
+      for (var key in statusCounts) {
+        text += "  • " + translateStatusToArabic(key) + ": " + statusCounts[key] + "\n";
+      }
+    }
+    
+    // إحصائيات عامة للنظام
+    var totalLeads = data.length - 1;
+    var totalWon = 0;
+    for (var i = 1; i < data.length; i++) {
+      if (data[i][3] === 'Won') totalWon++;
+    }
+    var generalConversion = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
+    
+    text += "\n💼 <b>إحصائيات النظام العامة:</b>\n" +
+            "🗂️ <b>إجمالي عملاء النظام:</b> " + totalLeads + " عميل\n" +
+            "🟢 <b>إجمالي الصفقات الناجحة (Won):</b> " + totalWon + "\n" +
+            "🎯 <b>معدل التحويل العام:</b> " + generalConversion + "%\n\n" +
+            "✨ طابت ليلتكم! تم إرسال التقرير تلقائياً.";
+    
+    sendTelegramMessageToAll(text);
+  } catch (e) {
+    Logger.log("فشل إرسال التقرير اليومي: " + e.toString());
+  }
+}
+
+// إرسال رسالة لكافة المعرفات المشتركة
+function sendTelegramMessageToAll(text) {
+  var chatIds = ["7416290524", "5507184715"];
+  var botToken = "8631149202:AAGL3IMsjFHPa1VBsYW4VSHrHQ5ckiFtOAQ";
+  
+  chatIds.forEach(function(chatId) {
+    try {
+      var url = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+      var payload = {
+        "chat_id": chatId,
+        "text": text,
+        "parse_mode": "HTML"
+      };
+      var options = {
+        "method": "post",
+        "contentType": "application/json",
+        "payload": JSON.stringify(payload),
+        "muteHttpExceptions": true
+      };
+      UrlFetchApp.fetch(url, options);
+    } catch (e) {
+      Logger.log("فشل إرسال للمعرف " + chatId + ": " + e.toString());
+    }
+  });
+}
+
+// دالة مساعدة لترجمة الحالات في التقرير اليومي
+function translateStatusToArabic(status) {
+  var mapping = {
+    "New Lead": "⚪ عميل جديد",
+    "Contacted": "🔵 تم الاتصال",
+    "Follow Up Required": "🟠 يحتاج متابعة",
+    "Appointment Booked": "📅 تم حجز موعد",
+    "Proposal Sent": "📄 تم إرسال العرض",
+    "Negotiating": "🟡 تفاوض",
+    "Won": "🟢 تم البيع بنجاح (Won)",
+    "Lost": "🔴 صفقة خاسرة (Lost)",
+    "Ghosted": "⚫ لم يرد / اختفى (Ghosted)",
+    "Not Interested": "❌ غير مهتم"
+  };
+  return mapping[status] || status;
 }
