@@ -1141,7 +1141,11 @@
             appointmentGroup.style.display = 'flex';
             const parts = (l.appointment_time || '').split(' ');
             const appDate = parts[0] || '';
-            const appTime = parts[1] || '12:00';
+            const rawTime = parts[1] || '12:00';
+            
+            // تنظيف الوقت من الثواني (مثل 12:30:00 إلى 12:30) لتتطابق مع خيارات القائمة المنسدلة
+            const timeParts = rawTime.split(':');
+            const appTime = timeParts.slice(0, 2).join(':');
             
             const dateParts = appDate.split('-');
             if (dateParts.length >= 3) {
