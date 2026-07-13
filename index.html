@@ -1298,12 +1298,16 @@
                     submitBtn.disabled = false;
                     submitBtn.innerText = "حفظ";
                 }
+                const oldLead = indexStr !== "" ? { ...leads[parseInt(indexStr)] } : null;
                 leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                 localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
                 calculateKPIs();
                 renderLeadsTable();
                 closeLeadModal();
                 checkUpcomingAppointments();
+                
+                // إرسال إشعار تلجرام فور الحفظ
+                sendTelegramNotification(indexStr === "" ? "add" : "update", newLead, oldLead);
             })
             .catch(err => {
                 console.warn("تنبيه: فشل إرسال البيانات للـ API، سيتم الحفظ محلياً:", err);
@@ -1313,6 +1317,7 @@
                 }
                 
                 let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+                const oldLead = indexStr !== "" ? { ...leads[parseInt(indexStr)] } : null;
                 
                 if (indexStr === "") {
                     newLead.id = "L-offline-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000);
@@ -1340,7 +1345,11 @@
                 closeLeadModal();
                 checkOfflineLeadsAlert();
                 checkUpcomingAppointments();
+                
+                // إرسال إشعار تلجرام حتى في الوضع المحلي
+                sendTelegramNotification(indexStr === "" ? "add" : "update", newLead, oldLead);
             });
+        }
         }
     }
 
@@ -1351,13 +1360,17 @@
                 tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري معالجة حذف العميل من شيت جوجل...</td></tr>';
             }
 
-            const targetLeadId = leads[index].id;
+            const targetLead = { ...leads[index] };
+            const targetLeadId = targetLead.id;
 
             if (isGoogleAppsScript) {
                 google.script.run.withSuccessHandler(function(updatedLeads) {
                     leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                     calculateKPIs();
                     renderLeadsTable();
+                    
+                    // إرسال إشعار تلجرام
+                    sendTelegramNotification("delete", targetLead);
                 }).deleteLead(targetLeadId);
             } else {
                 fetch(webAppUrl, {
@@ -1372,6 +1385,9 @@
                     leads = Array.isArray(updatedLeads) ? updatedLeads : [];
                     calculateKPIs();
                     renderLeadsTable();
+                    
+                    // إرسال إشعار تلجرام
+                    sendTelegramNotification("delete", targetLead);
                 })
                 .catch(err => {
                     console.warn("تنبيه: فشل الحذف عبر الـ API، سيتم الحذف محلياً:", err);
@@ -1386,9 +1402,92 @@
                     calculateKPIs();
                     renderLeadsTable();
                     checkOfflineLeadsAlert();
+                    
+                    // إرسال إشعار تلجرام
+                    sendTelegramNotification("delete", targetLead);
                 });
             }
         }
+    }
+
+    // دالة إرسال الإشعارات للتلجرام مباشرة من المتصفح (Vercel) لتخطي صلاحيات جوجل المعقدة
+    function sendTelegramNotification(type, lead, oldLead = null) {
+        const botToken = "8631149202:AAGL3IMsjFHPa1VBsYW4VSHrHQ5ckiFtOAQ";
+        const chatId = "7416290524";
+        
+        let text = "";
+        
+        function getArabicStatus(status) {
+            const mapping = {
+                "New Lead": "⚪ عميل جديد",
+                "Contacted": "🔵 تم الاتصال",
+                "Follow Up Required": "🟠 يحتاج متابعة",
+                "Appointment Booked": "📅 تم حجز موعد",
+                "Proposal Sent": "📄 تم إرسال العرض",
+                "Negotiating": "🟡 تفاوض",
+                "Won": "🟢 تم البيع بنجاح (Won)",
+                "Lost": "🔴 صفقة خاسرة (Lost)",
+                "Ghosted": "⚫ لم يرد / اختفى (Ghosted)",
+                "Not Interested": "❌ غير مهتم"
+            };
+            return mapping[status] || status;
+        }
+
+        function formatTimeArabic(timeStr) {
+            if (!timeStr) return "";
+            try {
+                const parts = timeStr.replace('T', ' ').split(' ');
+                if (parts.length >= 2) {
+                    const dateParts = parts[0].split('-');
+                    const timeParts = parts[1].split(':');
+                    if (dateParts.length >= 3 && timeParts.length >= 2) {
+                        let hour = parseInt(timeParts[0]);
+                        const minute = timeParts[1];
+                        const ampm = hour >= 12 ? 'م' : 'ص';
+                        hour = hour % 12;
+                        if (hour === 0) hour = 12;
+                        return `${parseInt(dateParts[2])}/${parseInt(dateParts[1])} (${hour}:${minute} ${ampm})`;
+                    }
+                }
+                return timeStr;
+            } catch(e) {
+                return timeStr;
+            }
+        }
+
+        if (type === 'add') {
+            text = `➕ <b>إضافة عميل جديد!</b>\n\n` +
+                   `👤 <b>الاسم:</b> ${lead.fullname}\n` +
+                   `📞 <b>الهاتف:</b> ${lead.phone}\n` +
+                   `⚡ <b>الحالة:</b> ${getArabicStatus(lead.status)}\n` +
+                   (lead.appointment_time ? `📅 <b>الموعد:</b> ${formatTimeArabic(lead.appointment_time)}` : "");
+        } else if (type === 'update') {
+            const oldStatusText = oldLead ? getArabicStatus(oldLead.status) : "غير معروف";
+            text = `🔄 <b>تحديث حالة عميل!</b>\n\n` +
+                   `👤 <b>الاسم:</b> ${lead.fullname}\n` +
+                   `📞 <b>الهاتف:</b> ${lead.phone}\n` +
+                   `❌ <b>الحالة السابقة:</b> ${oldStatusText}\n` +
+                   `✅ <b>الحالة الجديدة:</b> ${getArabicStatus(lead.status)}\n` +
+                   (lead.appointment_time ? `📅 <b>الموعد:</b> ${formatTimeArabic(lead.appointment_time)}` : "");
+        } else if (type === 'delete') {
+            text = `🗑️ <b>حذف عميل!</b>\n\n` +
+                   `👤 <b>الاسم:</b> ${lead.fullname}\n` +
+                   `📞 <b>الهاتف:</b> ${lead.phone}`;
+        }
+
+        if (!text) return;
+
+        fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: text,
+                parse_mode: "HTML"
+            })
+        }).catch(err => console.warn("فشل إرسال إشعار تلجرام البصري:", err));
     }
 
     function renderCharts() {
