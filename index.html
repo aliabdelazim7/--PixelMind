@@ -600,6 +600,71 @@
                 font-size: 0.85rem !important;
             }
         }
+
+        /* تنسيقات شبكة كروت العملاء المدمجة لتقليل السكرول الطويل */
+        .leads-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .compact-lead-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .compact-lead-card:hover {
+            border-color: var(--border-hover);
+        }
+        .compact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .compact-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+        .compact-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .compact-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.03);
+        }
+        @media (max-width: 600px) {
+            .leads-grid-container {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+            .compact-lead-card {
+                padding: 10px 8px !important;
+                gap: 6px !important;
+            }
+            .compact-name {
+                font-size: 0.8rem !important;
+                max-width: 90px !important;
+            }
+            .compact-details {
+                font-size: 0.7rem !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -641,12 +706,12 @@
 
     <!-- TAB: Leads -->
     <div id="leads-tab" class="tab-content active">
-        <div class="control-bar">
-            <div class="search-wrapper">
-                <input type="text" id="lead-search" class="search-input" placeholder="ابحث باسم العميل أو رقم الهاتف..." oninput="renderLeadsTable()">
+        <div class="control-bar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div class="search-wrapper" style="flex: 1; min-width: 200px;">
+                <input type="text" id="lead-search" class="search-input" placeholder="ابحث باسم العميل أو رقم الهاتف..." oninput="resetLimitAndRender()">
             </div>
-            <div class="filter-wrapper">
-                <select id="status-filter" class="select-filter" onchange="renderLeadsTable()">
+            <div class="filter-wrapper" style="min-width: 150px;">
+                <select id="status-filter" class="select-filter" onchange="resetLimitAndRender()">
                     <option value="">كل الحالات</option>
                     <option value="New Lead">⚪ عميل جديد</option>
                     <option value="Contacted">🔵 تم الاتصال</option>
@@ -660,9 +725,11 @@
                     <option value="Not Interested">❌ غير مهتم</option>
                 </select>
             </div>
+            <!-- زر تبديل طريقة العرض لمكافحة سكرول الموبايل الطويل -->
+            <button class="btn btn-secondary" id="view-mode-toggle-btn" onclick="toggleViewMode()" style="padding: 10px 14px; font-size: 0.9rem; flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; gap: 6px;">🗂️ عرض الشبكة</button>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive" id="table-view-wrapper">
             <table>
                 <thead>
                     <tr>
@@ -682,6 +749,14 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- وضع عرض شبكة الكروت المدمجة للعملاء -->
+        <div id="grid-view-wrapper" class="leads-grid-container" style="display: none;">
+            <!-- كروت مدمجة تُبنى برمجياً -->
+        </div>
+
+        <!-- حاوية زر تحميل المزيد لمنع الإرهاق الرأسي للموقع -->
+        <div id="load-more-container" style="display: flex; justify-content: center; width: 100%; padding: 15px 0;"></div>
     </div>
 
     <!-- TAB: Charts -->
@@ -921,6 +996,23 @@
 
     let leads = [];
 
+    // خريطة ألوان الحالات لتظليل جانب الكروت المدمجة في الشبكة
+    const STATUS_COLORS = {
+        'New Lead': '#f8f9fa',
+        'Contacted': '#007bff',
+        'Follow Up Required': '#fd7e14',
+        'Appointment Booked': '#6f42c1',
+        'Proposal Sent': '#e83e8c',
+        'Negotiating': '#ffc107',
+        'Won': '#28a745',
+        'Lost': '#dc3545',
+        'Ghosted': '#6c757d',
+        'Not Interested': '#343a40'
+    };
+
+    let visibleLeadsLimit = 15; // تصفح تدريجي 15 بـ 15 لتجنب السكرول الطويل
+    let currentViewMode = localStorage.getItem('meta_crm_view_mode') || 'detailed'; // detailed أو compact
+
     // رابط الويب الخاص بـ Google Apps Script للاتصال بالداتابيز مباشرة
     const webAppUrl = "https://script.google.com/macros/s/AKfycbxohnDJLJI6JPjgUWZaBirJrRrORTdq2jCJDwgUrL53lqEUNpgy-hzx17MsFlzCKJuj/exec";
 
@@ -1130,68 +1222,138 @@
         const query = document.getElementById('lead-search').value.toLowerCase();
         const statusFilter = document.getElementById('status-filter').value;
         const tbody = document.getElementById('leads-table-body');
+        const gridContainer = document.getElementById('grid-view-wrapper');
+        const tableViewWrapper = document.getElementById('table-view-wrapper');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        
         tbody.innerHTML = '';
+        if (gridContainer) gridContainer.innerHTML = '';
+        if (loadMoreContainer) loadMoreContainer.innerHTML = '';
 
         if (!Array.isArray(leads)) {
             console.error("Leads is not an array:", leads);
             return;
         }
 
+        // 1. تصفية العملاء بناءً على البحث الحالي والفلتر
+        const filteredLeads = [];
         leads.forEach((l, index) => {
             const fullnameStr = String(l.fullname || "").trim();
             const phoneStr = String(l.phone || "").trim();
             const statusStr = String(l.status || "").trim();
-            const createdAtStr = String(l.created_at || "").trim();
-
+            
             if (fullnameStr === "" && phoneStr === "") return;
-
+            
             const matchQuery = fullnameStr.toLowerCase().includes(query) || phoneStr.includes(query);
             const matchStatus = !statusFilter || statusStr === statusFilter;
-
+            
             if (matchQuery && matchStatus) {
-                const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
-                const waUrl = `https://wa.me/${phoneClean}`;
+                // حفظ الفهرس الأصلي للعميل في مصفوفة leads لتعديل وحذف دقيقين
+                filteredLeads.push({ lead: l, originalIndex: index });
+            }
+        });
 
-                // دالة يدوية ومضمونة لتنسيق الموعد دون الحاجة لـ new Date لتفادي الـ NaN والـ 24 ساعة
-                function formatAppointmentTimeArabic(apptStr) {
-                    if (!apptStr) return "";
-                    try {
-                        // استبدال حرف T بمسافة لتوحيد الصيغ القديمة والجديدة
-                        const cleanStr = apptStr.replace('T', ' ');
-                        const parts = cleanStr.split(' ');
-                        if (parts.length < 2) return apptStr;
-                        
-                        const dateParts = parts[0].split('-');
-                        const timeParts = parts[1].split(':');
-                        
-                        if (dateParts.length < 3 || timeParts.length < 2) return apptStr;
-                        
-                        const month = parseInt(dateParts[1]);
-                        const day = parseInt(dateParts[2]);
-                        
-                        let hour = parseInt(timeParts[0]);
-                        const minute = timeParts[1];
-                        
-                        const ampm = hour >= 12 ? 'م' : 'ص';
-                        hour = hour % 12;
-                        if (hour === 0) hour = 12;
-                        
-                        return `${day}/${month} (${hour}:${minute} ${ampm})`;
-                    } catch(e) {
-                        return apptStr;
-                    }
+        // 2. تحديث الحاوية الظاهرة بناءً على وضع العرض النشط
+        if (currentViewMode === 'compact') {
+            if (tableViewWrapper) tableViewWrapper.style.display = 'none';
+            if (gridContainer) gridContainer.style.display = 'grid';
+        } else {
+            if (tableViewWrapper) tableViewWrapper.style.display = 'block';
+            if (gridContainer) gridContainer.style.display = 'none';
+        }
+
+        // 3. عرض شريحة محددة من العملاء بناءً على visibleLeadsLimit
+        const leadsToRender = filteredLeads.slice(0, visibleLeadsLimit);
+
+        leadsToRender.forEach(item => {
+            const l = item.lead;
+            const index = item.originalIndex;
+            
+            const fullnameStr = String(l.fullname || "").trim();
+            const phoneStr = String(l.phone || "").trim();
+            const statusStr = String(l.status || "").trim();
+            const createdAtStr = String(l.created_at || "").trim();
+            
+            const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
+            const waUrl = `https://wa.me/${phoneClean}`;
+
+            function formatAppointmentTimeArabic(apptStr) {
+                if (!apptStr) return "";
+                try {
+                    const cleanStr = apptStr.replace('T', ' ');
+                    const parts = cleanStr.split(' ');
+                    if (parts.length < 2) return apptStr;
+                    
+                    const dateParts = parts[0].split('-');
+                    const timeParts = parts[1].split(':');
+                    
+                    if (dateParts.length < 3 || timeParts.length < 2) return apptStr;
+                    
+                    const month = parseInt(dateParts[1]);
+                    const day = parseInt(dateParts[2]);
+                    
+                    let hour = parseInt(timeParts[0]);
+                    const minute = timeParts[1];
+                    
+                    const ampm = hour >= 12 ? 'م' : 'ص';
+                    hour = hour % 12;
+                    if (hour === 0) hour = 12;
+                    
+                    return `${day}/${month} (${hour}:${minute} ${ampm})`;
+                } catch(e) {
+                    return apptStr;
                 }
+            }
 
-                // تنسيق وعرض تاريخ ووقت الموعد بنظام 12 ساعة باللغة العربية
-                let statusLabel = STATUS_LABELS[statusStr] || statusStr;
-                let appointmentTimeDisplay = '-';
-                if (statusStr === 'Appointment Booked' && l.appointment_time) {
-                    const formattedTime = formatAppointmentTimeArabic(l.appointment_time);
-                    if (formattedTime) {
-                        appointmentTimeDisplay = formattedTime;
-                    }
+            let statusLabel = STATUS_LABELS[statusStr] || statusStr;
+            let appointmentTimeDisplay = '-';
+            if (statusStr === 'Appointment Booked' && l.appointment_time) {
+                const formattedTime = formatAppointmentTimeArabic(l.appointment_time);
+                if (formattedTime) {
+                    appointmentTimeDisplay = formattedTime;
                 }
+            }
 
+            if (currentViewMode === 'compact') {
+                // ريندر كروت مدمجة للشبكة
+                if (gridContainer) {
+                    gridContainer.innerHTML += `
+                        <div class="compact-lead-card" style="border-right: 4px solid ${STATUS_COLORS[statusStr] || '#444'};">
+                            <div class="compact-header">
+                                <div style="display: flex; gap: 6px; align-items: center; min-width: 0; flex: 1;">
+                                    <input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()" style="width: 16px; height: 16px; margin: 0; flex-shrink: 0;">
+                                    <span class="compact-name" title="${fullnameStr}">${fullnameStr}</span>
+                                </div>
+                                <span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}" style="font-size: 0.65rem; padding: 2px 6px; flex-shrink: 0; margin-right: 6px;">${statusLabel}</span>
+                            </div>
+                            
+                            <div class="compact-details">
+                                <div style="margin-bottom: 2px; direction: ltr; text-align: right;">📞 ${phoneStr}</div>
+                                ${l.appointment_time && statusStr === 'Appointment Booked' ? `<div style="color: #ffc107; font-weight: 700; font-size: 0.7rem; margin-top: 2px;">📅 ${appointmentTimeDisplay}</div>` : ''}
+                                <div style="font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px;" title="${l.notes || ''}">📝 ${l.notes || '-'}</div>
+                            </div>
+                            
+                            <div class="compact-actions">
+                                <div style="display: flex; gap: 4px; align-items: center;">
+                                    <a href="${waUrl}" target="_blank" class="wa-link" style="padding: 4px 6px; font-size: 0.75rem; border-radius: 4px;">📱 مراسلة</a>
+                                    <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr}')" style="width: 28px; padding: 1px; font-size: 0.7rem; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; text-align: center;">
+                                        <option value="">✍️</option>
+                                        <option value="welcome">🗣️</option>
+                                        <option value="followup">🕒</option>
+                                        <option value="appointment">📅</option>
+                                        <option value="offer">📄</option>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 4px;">
+                                    <button class="btn btn-secondary" style="padding: 3px 6px; font-size: 0.75rem;" onclick="openEditLeadModal(${index})">تعديل</button>
+                                    <button class="btn btn-secondary" style="padding: 3px 6px; font-size: 0.75rem; color: #ff5252; border-color: rgba(220,53,69,0.15);" onclick="deleteLead(${index})">حذف</button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                // ريندر صفوف جدول كاملة
                 tbody.innerHTML += `
                     <tr>
                         <td class="select-col" data-label="تحديد" style="text-align: center; width: 40px;"><input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()"></td>
@@ -1223,6 +1385,17 @@
                 `;
             }
         });
+
+        // 4. عرض زر "تحميل المزيد" إذا كان هناك عملاء متبقين في التصفية
+        if (filteredLeads.length > visibleLeadsLimit) {
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = `
+                    <button class="btn btn-secondary" onclick="loadMoreLeads()" style="padding: 10px 24px; font-size: 0.9rem; margin-top: 15px; background-color: var(--bg-card); border-color: var(--border-color); display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+                        👇 تحميل المزيد من العملاء (${filteredLeads.length - visibleLeadsLimit} متبقي)
+                    </button>
+                `;
+            }
+        }
     }
 
     function openNewLeadModal() {
@@ -1669,6 +1842,7 @@
 
     window.onload = function() {
         initData();
+        updateViewModeUI();
         
         // إلغاء تسجيل الـ Service Worker وحذف الكاش تماماً لضمان عدم حدوث تعليق أو حلقات تحديث مفرطة
         if ('serviceWorker' in navigator) {
@@ -2047,6 +2221,38 @@
         
         // إعادة القائمة للخيار الافتراضي فارغ
         selectEl.value = "";
+    }
+
+    // زيادة الحد الأقصى للعملاء الظاهرين وإعادة الريندر
+    function loadMoreLeads() {
+        visibleLeadsLimit += 15;
+        renderLeadsTable();
+    }
+
+    // إعادة تعيين الحد الأقصى للريندر عند تغيير فلاتر البحث أو الحالة
+    function resetLimitAndRender() {
+        visibleLeadsLimit = 15;
+        renderLeadsTable();
+    }
+
+    // التبديل بين وضع القائمة المفصلة وكروت الشبكة المدمجة
+    function toggleViewMode() {
+        currentViewMode = currentViewMode === 'detailed' ? 'compact' : 'detailed';
+        localStorage.setItem('meta_crm_view_mode', currentViewMode);
+        updateViewModeUI();
+        renderLeadsTable();
+    }
+
+    // تحديث شكل ونص زر التبديل بناءً على الوضع المفعّل
+    function updateViewModeUI() {
+        const toggleBtn = document.getElementById('view-mode-toggle-btn');
+        if (toggleBtn) {
+            if (currentViewMode === 'compact') {
+                toggleBtn.innerHTML = '📋 عرض القائمة';
+            } else {
+                toggleBtn.innerHTML = '🗂️ عرض الشبكة';
+            }
+        }
     }
 
 </script>
