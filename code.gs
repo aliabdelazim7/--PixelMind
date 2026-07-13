@@ -92,12 +92,12 @@ function findRowById(sheet, id) {
   return -1;
 }
 
-// دالة لإضافة عميل جديد أو تعديل عميل موجود في الشيت
+// دالة لإضافة عميل جديد أو تعديل عميل موجود في الشيت مع حماية كاملة من التكرار
 function addOrUpdateLead(lead) {
   var sheet = getTargetSheet();
   checkAndInitHeaders(sheet);
   
-  // إذا كان العميل يمتلك معرفاً فريداً، نقوم بالبحث عنه وتحديث صفه
+  // 1. إذا كان العميل يمتلك معرفاً فريداً، نقوم بالبحث عنه وتحديث صفه
   if (lead.id) {
     var rowNum = findRowById(sheet, lead.id);
     if (rowNum !== -1) {
@@ -105,16 +105,28 @@ function addOrUpdateLead(lead) {
       sheet.getRange(rowNum, 3).setValue(lead.phone);
       sheet.getRange(rowNum, 4).setValue(lead.status);
       sheet.getRange(rowNum, 6).setValue(lead.appointment_time || ""); // حفظ الموعد في العمود السادس (F)
-    } else {
-      var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-      sheet.appendRow([lead.id, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
+      return getLeads();
     }
-  } else {
-    // إنشاء معرف فريد للعميل الجديد
-    var uniqueId = "L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000);
-    var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-    sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
   }
+  
+  // 2. فحص مكررات الأسماء والأرقام لتفادي التكرار عند حدوث مشاكل الشبكة أو المزامنة الأوفلاين
+  var data = sheet.getDataRange().getValues();
+  for (var i = 1; i < data.length; i++) {
+    var sheetFullname = String(data[i][1]).trim();
+    var sheetPhone = String(data[i][2]).trim();
+    if (sheetFullname === String(lead.fullname).trim() && sheetPhone === String(lead.phone).trim()) {
+      // العميل موجود بالفعل بنفس الاسم ورقم الهاتف! نقوم بتحديث حالته وموعده فقط لمنع التكرار
+      var rowNum = i + 1;
+      sheet.getRange(rowNum, 4).setValue(lead.status);
+      sheet.getRange(rowNum, 6).setValue(lead.appointment_time || "");
+      return getLeads();
+    }
+  }
+  
+  // 3. إنشاء معرف فريد للعميل الجديد وإضافته كصف جديد
+  var uniqueId = lead.id || ("L-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000));
+  var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+  sheet.appendRow([uniqueId, lead.fullname, lead.phone, lead.status, dateStr, lead.appointment_time || ""]);
   
   return getLeads(); 
 }
