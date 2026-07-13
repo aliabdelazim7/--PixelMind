@@ -66,13 +66,29 @@ function getLeads() {
       // تخطي الصفوف الفارغة تماماً في شيت جوجل
       if (!row[0] && !row[1] && !row[2]) continue;
       
+      var appTimeVal = "";
+      if (row[5]) {
+        var strVal = String(row[5]);
+        if (Object.prototype.toString.call(row[5]) === '[object Date]' || typeof row[5].getTime === 'function') {
+          appTimeVal = Utilities.formatDate(new Date(row[5]), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+        } else if (strVal.indexOf('GMT') !== -1 || strVal.indexOf('توقيت') !== -1) {
+          try {
+            appTimeVal = Utilities.formatDate(new Date(strVal), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+          } catch(e) {
+            appTimeVal = strVal;
+          }
+        } else {
+          appTimeVal = strVal.trim();
+        }
+      }
+
       leads.push({
         id: row[0] || "",
         fullname: row[1] || "",
         phone: row[2] || "",
         status: row[3] || "",
         created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
-        appointment_time: (row[5] instanceof Date) ? Utilities.formatDate(row[5], Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm") : String(row[5] || "").trim() // تنسيق الوقت لـ YYYY-MM-DD HH:MM لمنع ترحيل الساعات
+        appointment_time: appTimeVal
       });
     }
     return leads;
