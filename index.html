@@ -957,12 +957,10 @@
                 .catch(err => {
                     console.warn("تنبيه: فشل تحديث البيانات بالخلفية، سيتم الاستمرار بالوضع المحلي المتاح:", err);
                     
-                    if (leads.length === 0 || (leads.length === 3 && leads[0].id === "L-1")) {
-                        const banner = document.getElementById('connection-error-banner');
-                        if (banner) {
-                            banner.style.display = "block";
-                            banner.innerText = "🚨 فشل الاتصال بقاعدة البيانات. تفاصيل الخطأ: " + err.message;
-                        }
+                    const banner = document.getElementById('connection-error-banner');
+                    if (banner) {
+                        banner.style.display = "block";
+                        banner.innerText = "🚨 فشل الاتصال بقاعدة البيانات. تفاصيل الخطأ: " + err.message;
                     }
                     
                     updateDbStatus('status-error', 'غير متصل (يعمل بالذاكرة المؤقتة)');
