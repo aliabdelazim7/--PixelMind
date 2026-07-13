@@ -644,32 +644,60 @@
 
     <!-- TAB: Charts -->
     <div id="charts-tab" class="tab-content">
-        <div class="stats-dashboard-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
-            <!-- القمع البيعي -->
-            <div class="chart-card">
-                <div class="chart-title">📍 مراحل القمع البيعي للعملاء (Pipeline Funnel)</div>
-                <div class="chart-container">
-                    <canvas id="funnelChart"></canvas>
-                </div>
-            </div>
-            
-            <!-- الصفقات ومعدل التحويل -->
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div class="chart-card" style="min-height: 250px;">
-                    <div class="chart-title">📊 تحليل نتائج الصفقات النهائية</div>
-                    <div class="chart-container">
-                        <canvas id="conversionDoughnutChart"></canvas>
+        <div class="visual-stats-container" style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- الصف الأول: كروت ملخصة تفاعلية -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <!-- معدل نجاح الصفقات -->
+                <div class="chart-card" style="min-height: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(40, 167, 69, 0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">🎯 معدل تحويل المبيعات</span>
+                        <span id="v-conversion-rate" style="font-size: 1.6rem; font-weight: 800; color: #28a745;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="v-conversion-progress" style="width: 0%; height: 100%; background-color: #28a745; transition: width 0.6s ease-out; box-shadow: 0 0 10px rgba(40,167,69,0.5);"></div>
                     </div>
                 </div>
-                
-                <div class="chart-card" style="min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
-                    <div class="chart-title">🎯 معدل نجاح الصفقات (Conversion Rate)</div>
-                    <div style="position: relative; width: 100px; height: 100px; margin-top: 10px;">
-                        <svg viewBox="0 0 36 36" style="width: 100%; height: 100%; transform: rotate(-90deg);">
-                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#262626" stroke-width="3" />
-                            <path id="conversion-progress-path" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="0, 100" style="transition: stroke-dasharray 0.6s ease-out;" />
-                        </svg>
-                        <div id="conversion-rate-percentage" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.25rem; font-weight: 800; color: #fff;">0%</div>
+                <!-- الصفقات الناجحة -->
+                <div class="chart-card" style="min-height: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(255, 255, 255, 0.15);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">🟢 الصفقات المغلقة (Won)</span>
+                        <span id="v-won-count" style="font-size: 1.6rem; font-weight: 800; color: #fff;">0</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="v-won-progress" style="width: 0%; height: 100%; background-color: #fff; transition: width 0.6s ease-out;"></div>
+                    </div>
+                </div>
+                <!-- عملاء قيد المتابعة -->
+                <div class="chart-card" style="min-height: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(0, 123, 255, 0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">⚡ عملاء قيد العمل والاتصال</span>
+                        <span id="v-active-count" style="font-size: 1.6rem; font-weight: 800; color: #007bff;">0</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="v-active-progress" style="width: 0%; height: 100%; background-color: #007bff; transition: width 0.6s ease-out;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الصف الثاني: مخططات المقارنة والتحليل البصري الهادئ -->
+            <div class="stats-dashboard-grid" style="display: grid; grid-template-columns: 3fr 2fr; gap: 20px;">
+                <!-- قمع المبيعات التفاعلي -->
+                <div class="chart-card" style="min-height: auto; padding: 24px;">
+                    <div class="chart-title" style="text-align: right; margin-bottom: 20px; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                        <span>📍 تحليل قمع مراحل البيع</span>
+                    </div>
+                    <div id="visual-pipeline-bars-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- يتم تعبئته ديناميكياً -->
+                    </div>
+                </div>
+
+                <!-- تصنيف الصفقات والنتائج -->
+                <div class="chart-card" style="min-height: auto; padding: 24px;">
+                    <div class="chart-title" style="text-align: right; margin-bottom: 20px; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                        <span>📊 نتائج الاتصال والصفقات</span>
+                    </div>
+                    <div id="visual-outcomes-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- يتم تعبئته ديناميكياً -->
                     </div>
                 </div>
             </div>
@@ -1363,122 +1391,113 @@
         }
     }
 
-    let funnelChartObj = null;
-    let conversionDoughnutChartObj = null;
-
     function renderCharts() {
-        if (funnelChartObj) funnelChartObj.destroy();
-        if (conversionDoughnutChartObj) conversionDoughnutChartObj.destroy();
-
-        // 1. القمع البيعي الملون
-        const statuses = ['New Lead', 'Contacted', 'Follow Up Required', 'Appointment Booked', 'Proposal Sent', 'Negotiating', 'Won'];
-        const arStatusLabels = ['عميل جديد', 'تم الاتصال', 'يحتاج متابعة', 'مجدول موعد', 'أُرسل العرض', 'تفاوض', 'تم البيع'];
-        const funnelData = statuses.map(s => leads.filter(l => l.status === s).length);
-
-        const funnelColors = [
-            'rgba(248, 249, 250, 0.4)',  // New Lead
-            'rgba(0, 123, 255, 0.4)',    // Contacted
-            'rgba(253, 126, 20, 0.4)',   // Follow Up Required
-            'rgba(111, 66, 193, 0.4)',   // Appointment Booked
-            'rgba(232, 62, 140, 0.4)',   // Proposal Sent
-            'rgba(255, 193, 7, 0.4)',    // Negotiating
-            'rgba(255, 255, 255, 0.9)'   // Won
-        ];
-        
-        const funnelBorders = [
-            '#f8f9fa', '#007bff', '#fd7e14', '#6f42c1', '#e83e8c', '#ffc107', '#ffffff'
-        ];
-
-        const ctxFunnel = document.getElementById('funnelChart').getContext('2d');
-        funnelChartObj = new Chart(ctxFunnel, {
-            type: 'bar',
-            data: {
-                labels: arStatusLabels,
-                datasets: [{
-                    label: 'عدد العملاء',
-                    data: funnelData,
-                    backgroundColor: funnelColors,
-                    borderColor: funnelBorders,
-                    borderWidth: 1.5,
-                    borderRadius: 4,
-                    barThickness: 30
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    x: { grid: { display: false }, ticks: { color: '#a3a3a3', font: { family: 'Cairo', size: 11, weight: 'bold' } } },
-                    y: { grid: { color: '#222' }, ticks: { color: '#a3a3a3', stepSize: 1, font: { family: 'Cairo' } } }
-                }
-            }
-        });
-
-        // 2. تحليل الصفقات النهائي (الربح/الخسارة/التجاهل)
-        const outcomeStatuses = ['Won', 'Lost', 'Ghosted', 'Not Interested'];
-        const outcomeLabels = ['تم البيع', 'خسرنا الصفقة', 'لم يرد (اختفى)', 'غير مهتم'];
-        const outcomeData = outcomeStatuses.map(s => leads.filter(l => l.status === s).length);
-        
-        const outcomeColors = [
-            '#ffffff',                  // Won
-            'rgba(220, 53, 69, 0.7)',   // Lost
-            'rgba(108, 117, 125, 0.6)', // Ghosted
-            'rgba(52, 58, 64, 0.6)'     // Not Interested
-        ];
-
-        const ctxDoughnut = document.getElementById('conversionDoughnutChart').getContext('2d');
-        conversionDoughnutChartObj = new Chart(ctxDoughnut, {
-            type: 'doughnut',
-            data: {
-                labels: outcomeLabels,
-                datasets: [{
-                    data: outcomeData,
-                    backgroundColor: outcomeColors,
-                    borderColor: '#181818',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'right',
-                        labels: {
-                            color: '#a3a3a3',
-                            font: { family: 'Cairo', size: 11, weight: 'bold' },
-                            boxWidth: 12
-                        }
-                    }
-                },
-                cutout: '70%'
-            }
-        });
-
-        // 3. حساب وتحديث معدل التحويل البيعي (Conversion Rate)
+        // 1. حساب وتحديث مؤشرات اللوحة العلوية العائمة
         const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
         const totalCount = validLeads.length;
+        
         const wonCount = validLeads.filter(l => l.status === 'Won').length;
+        const activeCount = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(l.status)).length;
         
-        const rate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
+        const conversionRate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
         
-        const progressPath = document.getElementById('conversion-progress-path');
-        const percentageText = document.getElementById('conversion-rate-percentage');
-        
-        if (progressPath && percentageText) {
-            percentageText.innerText = rate + '%';
-            progressPath.setAttribute('stroke-dasharray', `${rate}, 100`);
+        const convRateEl = document.getElementById('v-conversion-rate');
+        const convProgEl = document.getElementById('v-conversion-progress');
+        if (convRateEl && convProgEl) {
+            convRateEl.innerText = conversionRate + '%';
+            convProgEl.style.width = conversionRate + '%';
             
-            if (rate >= 40) {
-                progressPath.setAttribute('stroke', '#28a745');
-            } else if (rate >= 15) {
-                progressPath.setAttribute('stroke', '#ffc107');
+            // تغيير لون المؤشر حسب قوة النسبة لمزيد من الراحة البصرية
+            if (conversionRate >= 45) {
+                convRateEl.style.color = '#28a745';
+                convProgEl.style.backgroundColor = '#28a745';
+                convProgEl.style.boxShadow = '0 0 10px rgba(40,167,105,0.5)';
+            } else if (conversionRate >= 20) {
+                convRateEl.style.color = '#ffc107';
+                convProgEl.style.backgroundColor = '#ffc107';
+                convProgEl.style.boxShadow = '0 0 10px rgba(255,193,7,0.5)';
             } else {
-                progressPath.setAttribute('stroke', '#dc3545');
+                convRateEl.style.color = '#dc3545';
+                convProgEl.style.backgroundColor = '#dc3545';
+                convProgEl.style.boxShadow = '0 0 10px rgba(220,53,69,0.5)';
             }
+        }
+        
+        const wonCountEl = document.getElementById('v-won-count');
+        const wonProgEl = document.getElementById('v-won-progress');
+        if (wonCountEl && wonProgEl) {
+            wonCountEl.innerText = wonCount;
+            const wonPct = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
+            wonProgEl.style.width = wonPct + '%';
+        }
+        
+        const activeCountEl = document.getElementById('v-active-count');
+        const activeProgEl = document.getElementById('v-active-progress');
+        if (activeCountEl && activeProgEl) {
+            activeCountEl.innerText = activeCount;
+            const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+            activeProgEl.style.width = activePct + '%';
+        }
+
+        // 2. تعبئة قمع مراحل البيع البصري (Visual Pipeline Bars)
+        const pipelineStages = [
+            { key: 'New Lead', label: '⚪ عميل جديد', color: '#f8f9fa' },
+            { key: 'Contacted', label: '🔵 تم الاتصال', color: '#007bff' },
+            { key: 'Follow Up Required', label: '🟠 يحتاج متابعة', color: '#fd7e14' },
+            { key: 'Appointment Booked', label: '📅 تم حجز موعد', color: '#6f42c1' },
+            { key: 'Proposal Sent', label: '📄 تم إرسال العرض', color: '#e83e8c' },
+            { key: 'Negotiating', label: '🟡 تفاوض', color: '#ffc107' },
+            { key: 'Won', label: '🟢 تم البيع بنجاح (Won)', color: '#28a745' }
+        ];
+
+        const pipelineContainer = document.getElementById('visual-pipeline-bars-container');
+        if (pipelineContainer) {
+            pipelineContainer.innerHTML = '';
+            pipelineStages.forEach(stage => {
+                const count = validLeads.filter(l => l.status === stage.key).length;
+                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+                
+                pipelineContainer.innerHTML += `
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700;">
+                            <span style="color: ${stage.color};">${stage.label}</span>
+                            <span style="color: var(--text-secondary);">${count} عملاء (${pct}%)</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background-color: ${stage.color}; box-shadow: 0 0 6px ${stage.color}; border-radius: 4px; transition: width 0.6s ease-out;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 3. تعبئة نتائج الاتصال النهائية (Visual Outcomes)
+        const outcomeStages = [
+            { key: 'Won', label: '🟢 صفقات ناجحة (Won)', color: '#28a745' },
+            { key: 'Lost', label: '🔴 صفقات خاسرة (Lost)', color: '#dc3545' },
+            { key: 'Ghosted', label: '⚫ لم يرد / اختفى (Ghosted)', color: '#6c757d' },
+            { key: 'Not Interested', label: '❌ غير مهتم (Not Interested)', color: '#343a40' }
+        ];
+
+        const outcomesContainer = document.getElementById('visual-outcomes-container');
+        if (outcomesContainer) {
+            outcomesContainer.innerHTML = '';
+            outcomeStages.forEach(stage => {
+                const count = validLeads.filter(l => l.status === stage.key).length;
+                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+
+                outcomesContainer.innerHTML += `
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700;">
+                            <span style="color: ${stage.color === '#ffffff' ? '#fff' : stage.color};">${stage.label}</span>
+                            <span style="color: var(--text-secondary);">${count} صفقات (${pct}%)</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background-color: ${stage.color}; border-radius: 4px; transition: width 0.6s ease-out;"></div>
+                        </div>
+                    </div>
+                `;
+            });
         }
     }
 
