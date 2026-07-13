@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leadflow-cache-v1';
+const CACHE_NAME = 'leadflow-cache-v3';
 const ASSETS = [
   './',
   './index.html',
@@ -33,30 +33,30 @@ self.addEventListener('activate', e => {
   );
 });
 
-// حدث جلب البيانات (Fetch Event): تقديم الملفات من الكاش عند انقطاع الشبكة
+// حدث جلب البيانات (Fetch Event): استراتيجية الشبكة أولاً (Network-First) لتفادي تجمد الكاش
 self.addEventListener('fetch', e => {
-  // تخطي الطلبات التي ليست من نوع GET أو طلبات جوجل شيت لمنع التعارض مع الحفظ والمسح
+  // تخطي الطلبات التي ليست من نوع GET أو طلبات جوجل شيت لمنع التعارض مع قاعدة البيانات
   if (e.request.method !== 'GET' || e.request.url.includes('script.google.com')) {
     return;
   }
 
   e.respondWith(
-    caches.match(e.request).then(cachedResponse => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request).then(networkResponse => {
-        // التحقق من صلاحية الاستجابة قبل إضافتها للكاش
-        if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-          return networkResponse;
-        }
+    fetch(e.request).then(networkResponse => {
+      // إذا كانت الاستجابة سليمة، نحدث الكاش بالنسخة الجديدة ونرجعها
+      if (networkResponse && networkResponse.status === 200) {
         const responseToCache = networkResponse.clone();
         caches.open(CACHE_NAME).then(cache => {
           cache.put(e.request, responseToCache);
         });
-        return networkResponse;
-      }).catch(() => {
-        // في حال انقطاع الشبكة تماماً
+      }
+      return networkResponse;
+    }).catch(() => {
+      // في حال انقطاع الإنترنت تماماً، نقرأ من الكاش المتاح
+      return caches.match(e.request).then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // كحل نهائي إذا لم نجد الملف بالكاش
         return caches.match('./index.html');
       });
     })
