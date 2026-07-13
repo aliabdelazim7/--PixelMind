@@ -1048,11 +1048,13 @@
                 const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
                 const waUrl = `https://wa.me/${phoneClean}`;
 
-                // دالة يدوية ومضمونة لتنسيق الموعد دون الحاجة لـ new Date لتفادي الـ NaN
+                // دالة يدوية ومضمونة لتنسيق الموعد دون الحاجة لـ new Date لتفادي الـ NaN والـ 24 ساعة
                 function formatAppointmentTimeArabic(apptStr) {
                     if (!apptStr) return "";
                     try {
-                        const parts = apptStr.split(' ');
+                        // استبدال حرف T بمسافة لتوحيد الصيغ القديمة والجديدة
+                        const cleanStr = apptStr.replace('T', ' ');
+                        const parts = cleanStr.split(' ');
                         if (parts.length < 2) return apptStr;
                         
                         const dateParts = parts[0].split('-');
