@@ -72,7 +72,7 @@ function getLeads() {
         phone: row[2] || "",
         status: row[3] || "",
         created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
-        appointment_time: row[5] || "" // تاريخ ووقت الموعد المخزن في العمود السادس (F)
+        appointment_time: (row[5] instanceof Date) ? Utilities.formatDate(row[5], Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm") : String(row[5] || "").trim() // تنسيق الوقت لـ YYYY-MM-DD HH:MM لمنع ترحيل الساعات
       });
     }
     return leads;
