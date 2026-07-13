@@ -1374,10 +1374,30 @@
     window.onload = function() {
         initData();
         
-        // تسجيل الـ Service Worker لتمكين التشغيل أوفلاين كـ PWA
+        // تسجيل الـ Service Worker لتمكين التشغيل أوفلاين كـ PWA مع كاشف التحديثات الفورية
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker registered successfully!', reg))
+                .then(reg => {
+                    console.log('Service Worker registered successfully!', reg);
+                    
+                    // إجبار المتصفح على البحث عن تحديثات فورية للملفات عند فتح التطبيق
+                    reg.update();
+                    
+                    // عند العثور على تحديث جديد، نقوم بإعادة تحميل التطبيق تلقائياً لتثبيته
+                    reg.onupdatefound = () => {
+                        const installingWorker = reg.installing;
+                        if (installingWorker) {
+                            installingWorker.onstatechange = () => {
+                                if (installingWorker.state === 'installed') {
+                                    if (navigator.serviceWorker.controller) {
+                                        console.log('New update installed. Reloading app...');
+                                        window.location.reload();
+                                    }
+                                }
+                            };
+                        }
+                    };
+                })
                 .catch(err => console.error('Service Worker registration failed:', err));
         }
 
@@ -1512,15 +1532,7 @@
         document.head.appendChild(style);
         return el;
     }
-    window.onload = function() {
-        initData();
-        // تسجيل الـ Service Worker لتمكين التشغيل أوفلاين كـ PWA
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('Service Worker registered successfully!', reg))
-                .catch(err => console.error('Service Worker registration failed:', err));
-        }
-    };
+
 </script>
 </body>
 </html>
