@@ -982,11 +982,11 @@
 </div>
 
 <!-- مودال إعدادات النظام والربط (Settings Modal) -->
-<div id="settings-modal" class="modal">
-    <div class="modal-content" style="max-width: 500px;">
+<div id="settings-modal" class="modal-overlay">
+    <div class="modal" style="max-width: 500px;">
         <div class="modal-header">
-            <h2 id="settings-modal-title">⚙️ إعدادات النظام والربط</h2>
-            <button class="close-btn" onclick="closeSettingsModal()">×</button>
+            <div class="modal-title" id="settings-modal-title">⚙️ إعدادات النظام والربط</div>
+            <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
         </div>
         <form id="settings-form" onsubmit="saveSettings(event)">
             <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 12px; color: var(--text-primary);">📡 إعدادات ربط فيسبوك (Meta CAPI)</h3>
