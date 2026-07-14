@@ -2339,10 +2339,10 @@
     // ==================== وظائف التحكم بلوحة الإعدادات والربط مع ميتا (Meta CAPI) ====================
 
     function openSettingsModal() {
-        // قراءة وتعبئة إعدادات ميتا المخزنة محلياً في متصفح المستخدم (الافتراضي هو البكسل الخاص بك)
+        // قراءة وتعبئة إعدادات ميتا المخزنة محلياً في متصفح المستخدم (الافتراضي هو البكسل والتوكن الخاصين بك)
         document.getElementById('meta-pixel-id').value = localStorage.getItem('meta_pixel_id') || '1710050566782840';
-        document.getElementById('meta-access-token').value = localStorage.getItem('meta_access_token') || '';
-        document.getElementById('meta-capi-active').checked = localStorage.getItem('meta_capi_active') === 'true';
+        document.getElementById('meta-access-token').value = localStorage.getItem('meta_access_token') || 'EAAW648mk5xEBRyZB7Nm8PDYDoZA1WM9ZAj4ZBdFlfjpL2NayPZCfDOzSIc876VmbnUTxnXx7NBLXRuetuotDZBvhvBBRuLlZCs2PryJpkA9TQHGLSDEBUSbNKvgw9SkcwzLP1ZBeVnseJnJctYcSNxdqr5Q69tigcPZBXcVCXm8pAnxmpRx5H2pElPUMDw34PqYC5MwZDZD';
+        document.getElementById('meta-capi-active').checked = localStorage.getItem('meta_capi_active') !== 'false';
         
         document.getElementById('settings-modal').classList.add('active');
     }
@@ -2360,7 +2360,7 @@
 
         localStorage.setItem('meta_pixel_id', pixelId);
         localStorage.setItem('meta_access_token', accessToken);
-        localStorage.setItem('meta_capi_active', capiActive);
+        localStorage.setItem('meta_capi_active', capiActive ? 'true' : 'false');
 
         alert("✅ تم حفظ إعدادات ربط فيسبوك (Meta CAPI) بنجاح!");
         closeSettingsModal();
@@ -2376,9 +2376,9 @@
 
     // دالة إرسال أحداث التحويلات لفيسبوك (Meta CAPI) عند نجاح الصفقة (Won)
     async function sendMetaConversionsEvent(lead) {
-        const isCapiActive = localStorage.getItem('meta_capi_active') === 'true';
+        const isCapiActive = localStorage.getItem('meta_capi_active') !== 'false';
         const pixelId = localStorage.getItem('meta_pixel_id') || '1710050566782840';
-        const accessToken = localStorage.getItem('meta_access_token') || '';
+        const accessToken = localStorage.getItem('meta_access_token') || 'EAAW648mk5xEBRyZB7Nm8PDYDoZA1WM9ZAj4ZBdFlfjpL2NayPZCfDOzSIc876VmbnUTxnXx7NBLXRuetuotDZBvhvBBRuLlZCs2PryJpkA9TQHGLSDEBUSbNKvgw9SkcwzLP1ZBeVnseJnJctYcSNxdqr5Q69tigcPZBXcVCXm8pAnxmpRx5H2pElPUMDw34PqYC5MwZDZD';
 
         if (!isCapiActive || !pixelId || !accessToken) {
             console.log("تنبيه: ربط فيسبوك (Meta CAPI) غير مفعّل أو البيانات ناقصة في الإعدادات.");
