@@ -346,6 +346,7 @@ function translateStatusToArabic(status) {
     "Appointment Booked": "📅 تم حجز موعد",
     "Proposal Sent": "📄 تم إرسال العرض",
     "Negotiating": "🟡 تفاوض",
+    "In Progress": "⚡ جاري العمل",
     "Won": "🟢 تم البيع بنجاح (Won)",
     "Lost": "🔴 صفقة خاسرة (Lost)",
     "Ghosted": "⚫ لم يرد / اختفى (Ghosted)",

@@ -331,6 +331,7 @@
         .badge-appointmentbooked { background-color: rgba(111, 66, 193, 0.15); color: #b78eff; border-color: rgba(111, 66, 193, 0.3); }
         .badge-proposalsent { background-color: rgba(232, 62, 140, 0.15); color: #f584b7; border-color: rgba(232, 62, 140, 0.3); }
         .badge-negotiating { background-color: rgba(255, 193, 7, 0.15); color: #ffe066; border-color: rgba(255, 193, 7, 0.3); }
+        .badge-inprogress { background-color: rgba(23, 162, 184, 0.15); color: #17a2b8; border-color: rgba(23, 162, 184, 0.3); }
         .badge-won { background-color: #ffffff; color: #000000; border-color: #ffffff; }
         .badge-lost { background-color: rgba(220, 53, 69, 0.15); color: #ff6b78; border-color: rgba(220, 53, 69, 0.3); }
         .badge-ghosted { background-color: rgba(108, 117, 125, 0.15); color: #888; border-color: rgba(108, 117, 125, 0.2); }
@@ -737,6 +738,7 @@
                     <option value="Appointment Booked">📅 تم حجز موعد</option>
                     <option value="Proposal Sent">📄 تم إرسال العرض</option>
                     <option value="Negotiating">🟡 تفاوض</option>
+                    <option value="In Progress">⚡ جاري العمل</option>
                     <option value="Won">🟢 تم البيع</option>
                     <option value="Lost">🔴 خسرنا الصفقة</option>
                     <option value="Ghosted">⚫ لم يرد (اختفى)</option>
@@ -868,6 +870,7 @@
                     <option value="Appointment Booked">📅 تم حجز موعد</option>
                     <option value="Proposal Sent">📄 تم إرسال العرض</option>
                     <option value="Negotiating">🟡 تفاوض</option>
+                    <option value="In Progress">⚡ جاري العمل</option>
                     <option value="Won">🟢 تم البيع</option>
                     <option value="Lost">🔴 خسرنا الصفقة</option>
                     <option value="Ghosted">⚫ لم يرد (اختفى)</option>
@@ -1020,6 +1023,7 @@
         'Appointment Booked': 'badge-appointmentbooked',
         'Proposal Sent': 'badge-proposalsent',
         'Negotiating': 'badge-negotiating',
+        'In Progress': 'badge-inprogress',
         'Won': 'badge-won',
         'Lost': 'badge-lost',
         'Ghosted': 'badge-ghosted',
@@ -1033,6 +1037,7 @@
         'Appointment Booked': '📅 تم حجز موعد',
         'Proposal Sent': '📄 تم إرسال العرض',
         'Negotiating': '🟡 تفاوض',
+        'In Progress': '⚡ جاري العمل',
         'Won': '🟢 تم البيع',
         'Lost': '🔴 خسرنا الصفقة',
         'Ghosted': '⚫ لم يرد (اختفى)',
@@ -1051,6 +1056,7 @@
         'Appointment Booked': '#6f42c1',
         'Proposal Sent': '#e83e8c',
         'Negotiating': '#ffc107',
+        'In Progress': '#17a2b8',
         'Won': '#28a745',
         'Lost': '#dc3545',
         'Ghosted': '#6c757d',
@@ -1753,6 +1759,7 @@
                 "Appointment Booked": "📅 تم حجز موعد",
                 "Proposal Sent": "📄 تم إرسال العرض",
                 "Negotiating": "🟡 تفاوض",
+                "In Progress": "⚡ جاري العمل",
                 "Won": "🟢 تم البيع بنجاح (Won)",
                 "Lost": "🔴 صفقة خاسرة (Lost)",
                 "Ghosted": "⚫ لم يرد / اختفى (Ghosted)",
@@ -1876,6 +1883,7 @@
             { key: 'Appointment Booked', label: '📅 تم حجز موعد', color: '#6f42c1' },
             { key: 'Proposal Sent', label: '📄 تم إرسال العرض', color: '#e83e8c' },
             { key: 'Negotiating', label: '🟡 تفاوض', color: '#ffc107' },
+            { key: 'In Progress', label: '⚡ جاري العمل', color: '#17a2b8' },
             { key: 'Won', label: '🟢 تم البيع بنجاح (Won)', color: '#28a745' }
         ];
 
@@ -2245,6 +2253,7 @@
         const statusMap = {
             'New Lead': 0, 'Contacted': 0, 'Follow Up Required': 0,
             'Appointment Booked': 0, 'Proposal Sent': 0, 'Negotiating': 0,
+            'In Progress': 0,
             'Won': 0, 'Lost': 0, 'Ghosted': 0, 'Not Interested': 0
         };
         validLeads.forEach(l => {
@@ -2263,6 +2272,7 @@
                      `  • 📅 تم حجز موعد: ${statusMap['Appointment Booked']}\n` +
                      `  • 📄 تم إرسال العرض: ${statusMap['Proposal Sent']}\n` +
                      `  • 🟡 تفاوض: ${statusMap['Negotiating']}\n` +
+                     `  • ⚡ جاري العمل: ${statusMap['In Progress']}\n` +
                      `  • 🟢 تم البيع: ${statusMap['Won']}\n` +
                      `  • 🔴 خسرنا الصفقة: ${statusMap['Lost']}\n` +
                      `  • ⚫ لم يرد (اختفى): ${statusMap['Ghosted']}\n` +
