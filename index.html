@@ -687,6 +687,7 @@
             <button id="install-pwa-btn" class="btn" style="display:none; background-color:#28a745; color:white; border-color:#28a745; padding: 8px 14px; font-size: 0.9rem;" onclick="installPWA()">📲 تثبيت</button>
             <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.9rem;" onclick="sendManualTelegramReport()">📊 تقرير تلجرام</button>
             <button class="btn btn-danger" id="bulk-delete-btn" style="display: none; background-color: #dc3545; color: white; border-color: #dc3545; padding: 8px 14px; font-size: 0.9rem;" onclick="deleteSelectedLeads()">🗑️ حذف المحدد (0)</button>
+            <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.9rem;" onclick="openSettingsModal()">⚙️ الإعدادات</button>
             <button class="btn" style="padding: 8px 14px; font-size: 0.9rem;" onclick="openNewLeadModal()">+ إضافة عميل</button>
             <button class="btn btn-secondary" style="padding: 8px 8px; font-size: 0.8rem; opacity: 0.4;" onclick="resetDefaultData()" title="إعادة تعيين البيانات">🔄</button>
         </div>
@@ -957,6 +958,36 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeLeadModal()">إلغاء</button>
                 <button type="submit" class="btn">حفظ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- مودال إعدادات النظام والربط (Settings Modal) -->
+<div id="settings-modal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="settings-modal-title">⚙️ إعدادات النظام والربط</h2>
+            <button class="close-btn" onclick="closeSettingsModal()">×</button>
+        </div>
+        <form id="settings-form" onsubmit="saveSettings(event)">
+            <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 12px; color: var(--text-primary);">📡 إعدادات ربط فيسبوك (Meta CAPI)</h3>
+            <div class="form-group">
+                <label for="meta-pixel-id">معرف بكسل فيسبوك (Meta Pixel ID)</label>
+                <input type="text" id="meta-pixel-id" placeholder="مثال: 123456789012345" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
+            </div>
+            <div class="form-group">
+                <label for="meta-access-token">رمز الوصول للتحويلات (Meta CAPI Access Token)</label>
+                <textarea id="meta-access-token" rows="3" placeholder="أدخل توكن التحويلات الخاص بفيسبوك هنا..." style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; resize: vertical;"></textarea>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
+                <input type="checkbox" id="meta-capi-active" style="width: 18px; height: 18px; cursor: pointer;">
+                <label for="meta-capi-active" style="margin: 0; cursor: pointer; font-weight: 700;">تفعيل إرسال عملاء الـ Done تلقائياً لميتا (CAPI)</label>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 20px;">
+                <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">إلغاء</button>
+                <button type="submit" class="btn">حفظ الإعدادات</button>
             </div>
         </form>
     </div>
@@ -1503,6 +1534,19 @@
             notes: cleanNotes
         };
 
+        // فحص ما إذا كانت حالة العميل قد تحولت حديثاً إلى Won للربط مع بكسل فيسبوك
+        let isMetaConversion = false;
+        if (cleanStatus === 'Won') {
+            if (indexStr === "") {
+                isMetaConversion = true;
+            } else {
+                const idx = parseInt(indexStr);
+                if (leads[idx] && leads[idx].status !== 'Won') {
+                    isMetaConversion = true;
+                }
+            }
+        }
+
         if (isGoogleAppsScript) {
             if (indexStr !== "") {
                 const idx = parseInt(indexStr);
@@ -1519,6 +1563,11 @@
                 renderLeadsTable();
                 closeLeadModal();
                 checkUpcomingAppointments();
+                
+                // إطلاق حدث تحويل ميتا CAPI
+                if (isMetaConversion) {
+                    sendMetaConversionsEvent(newLead);
+                }
             }).addOrUpdateLead(newLead);
         } else {
             if (indexStr !== "") {
@@ -1549,6 +1598,11 @@
                 
                 // إرسال إشعار تلجرام فور الحفظ
                 sendTelegramNotification(indexStr === "" ? "add" : "update", newLead, oldLead);
+                
+                // إطلاق حدث تحويل ميتا CAPI
+                if (isMetaConversion) {
+                    sendMetaConversionsEvent(newLead);
+                }
             })
             .catch(err => {
                 console.warn("تنبيه: فشل إرسال البيانات للـ API، سيتم الحفظ محلياً:", err);
@@ -1589,6 +1643,11 @@
                 
                 // إرسال إشعار تلجرام حتى في الوضع المحلي
                 sendTelegramNotification(indexStr === "" ? "add" : "update", newLead, oldLead);
+                
+                // إطلاق حدث تحويل ميتا CAPI
+                if (isMetaConversion) {
+                    sendMetaConversionsEvent(newLead);
+                }
             });
         }
     }
@@ -2256,6 +2315,109 @@
             } else {
                 toggleBtn.innerHTML = '🗂️ عرض الشبكة';
             }
+        }
+    }
+
+    // ==================== وظائف التحكم بلوحة الإعدادات والربط مع ميتا (Meta CAPI) ====================
+
+    function openSettingsModal() {
+        // قراءة وتعبئة إعدادات ميتا المخزنة محلياً في متصفح المستخدم
+        document.getElementById('meta-pixel-id').value = localStorage.getItem('meta_pixel_id') || '';
+        document.getElementById('meta-access-token').value = localStorage.getItem('meta_access_token') || '';
+        document.getElementById('meta-capi-active').checked = localStorage.getItem('meta_capi_active') === 'true';
+        
+        document.getElementById('settings-modal').classList.add('active');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').classList.remove('active');
+    }
+
+    function saveSettings(e) {
+        e.preventDefault();
+        
+        const pixelId = document.getElementById('meta-pixel-id').value.trim();
+        const accessToken = document.getElementById('meta-access-token').value.trim();
+        const capiActive = document.getElementById('meta-capi-active').checked;
+
+        localStorage.setItem('meta_pixel_id', pixelId);
+        localStorage.setItem('meta_access_token', accessToken);
+        localStorage.setItem('meta_capi_active', capiActive);
+
+        alert("✅ تم حفظ إعدادات ربط فيسبوك (Meta CAPI) بنجاح!");
+        closeSettingsModal();
+    }
+
+    // دالة التشفير SHA-256 للمتصفح (Web Crypto API) لحماية خصوصية بيانات العملاء طبقاً لشروط ميتا
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // دالة إرسال أحداث التحويلات لفيسبوك (Meta CAPI) عند نجاح الصفقة (Won)
+    async function sendMetaConversionsEvent(lead) {
+        const isCapiActive = localStorage.getItem('meta_capi_active') === 'true';
+        const pixelId = localStorage.getItem('meta_pixel_id') || '';
+        const accessToken = localStorage.getItem('meta_access_token') || '';
+
+        if (!isCapiActive || !pixelId || !accessToken) {
+            console.log("تنبيه: ربط فيسبوك (Meta CAPI) غير مفعّل أو البيانات ناقصة في الإعدادات.");
+            return;
+        }
+
+        try {
+            // 1. تنظيف وتجهيز البيانات الشخصية للتشفير
+            // إزالة المسافات، علامات الزائد، والأقواس
+            const rawPhone = String(lead.phone || "").replace(/[\+\s\-\(\)]/g, '');
+            const rawName = String(lead.fullname || "").trim().toLowerCase();
+
+            // 2. تشفير هاتف واسم العميل بنظام SHA-256 لحماية خصوصية العميل
+            const hashedPhone = await sha256(rawPhone);
+            const hashedName = await sha256(rawName);
+
+            // 3. بناء هيكل الطلب المعتمد لدى فيسبوك (Meta CAPI Payload)
+            const payload = {
+                data: [
+                    {
+                        event_name: "Purchase",
+                        event_time: Math.floor(Date.now() / 1000),
+                        event_source_url: window.location.href,
+                        action_source: "website",
+                        user_data: {
+                            ph: [hashedPhone],
+                            fn: [hashedName]
+                        },
+                        custom_data: {
+                            value: 1.0,
+                            currency: "EGP"
+                        }
+                    }
+                ]
+            };
+
+            console.log("جاري إرسال حدث الشراء لفيسبوك CAPI...", payload);
+
+            // 4. إرسال الطلب لخوادم ميتا مباشرة وبأمان من متصفح العميل
+            const response = await fetch(`https://graph.facebook.com/v19.0/${pixelId}/events?access_token=${accessToken}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            console.log("استجابة خادم ميتا CAPI:", result);
+
+            if (result.events_received && result.events_received > 0) {
+                console.log("✅ تم إرسال الحدث بنجاح لميتا لتحديث خوارزمية الإعلانات!");
+            } else {
+                console.warn("تنبيه: لم ينجح إرسال الحدث لفيسبوك بالكامل:", result);
+            }
+        } catch (error) {
+            console.error("خطأ أثناء إرسال حدث التحويل لميتا (CAPI):", error);
         }
     }
 
