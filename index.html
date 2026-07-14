@@ -1157,6 +1157,17 @@
     }
 
     function initData() {
+        // تهيئة إعدادات ميتا الافتراضية محلياً لتفادي الكاش الفارغ
+        if (!localStorage.getItem('meta_pixel_id')) {
+            localStorage.setItem('meta_pixel_id', '1710050566782840');
+        }
+        if (!localStorage.getItem('meta_access_token')) {
+            localStorage.setItem('meta_access_token', 'EAAW648mk5xEBRyZB7Nm8PDYDoZA1WM9ZAj4ZBdFlfjpL2NayPZCfDOzSIc876VmbnUTxnXx7NBLXRuetuotDZBvhvBBRuLlZCs2PryJpkA9TQHGLSDEBUSbNKvgw9SkcwzLP1ZBeVnseJnJctYcSNxdqr5Q69tigcPZBXcVCXm8pAnxmpRx5H2pElPUMDw34PqYC5MwZDZD');
+        }
+        if (localStorage.getItem('meta_capi_active') === null) {
+            localStorage.setItem('meta_capi_active', 'true');
+        }
+
         updateDbStatus('status-connecting', 'جاري المزامنة في الخلفية...');
 
         // 1. تحميل فوري وسريع من الذاكرة المحلية
