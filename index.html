@@ -2321,8 +2321,8 @@
     // ==================== وظائف التحكم بلوحة الإعدادات والربط مع ميتا (Meta CAPI) ====================
 
     function openSettingsModal() {
-        // قراءة وتعبئة إعدادات ميتا المخزنة محلياً في متصفح المستخدم
-        document.getElementById('meta-pixel-id').value = localStorage.getItem('meta_pixel_id') || '';
+        // قراءة وتعبئة إعدادات ميتا المخزنة محلياً في متصفح المستخدم (الافتراضي هو البكسل الخاص بك)
+        document.getElementById('meta-pixel-id').value = localStorage.getItem('meta_pixel_id') || '1710050566782840';
         document.getElementById('meta-access-token').value = localStorage.getItem('meta_access_token') || '';
         document.getElementById('meta-capi-active').checked = localStorage.getItem('meta_capi_active') === 'true';
         
@@ -2359,7 +2359,7 @@
     // دالة إرسال أحداث التحويلات لفيسبوك (Meta CAPI) عند نجاح الصفقة (Won)
     async function sendMetaConversionsEvent(lead) {
         const isCapiActive = localStorage.getItem('meta_capi_active') === 'true';
-        const pixelId = localStorage.getItem('meta_pixel_id') || '';
+        const pixelId = localStorage.getItem('meta_pixel_id') || '1710050566782840';
         const accessToken = localStorage.getItem('meta_access_token') || '';
 
         if (!isCapiActive || !pixelId || !accessToken) {
