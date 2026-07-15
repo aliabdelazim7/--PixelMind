@@ -1156,6 +1156,11 @@
                 </select>
             </div>
 
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 5px; margin-bottom: 12px; direction: rtl; justify-content: flex-start;">
+                <input type="checkbox" id="lead-has-appointment" onchange="toggleAppointmentInputs(this.checked)" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                <label for="lead-has-appointment" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">📅 تحديد موعد حجز / متابعة للعميل</label>
+            </div>
+
             <div class="form-group" id="appointment-time-group" style="display: none; gap: 8px; flex-direction: row; align-items: flex-end;">
                 <div style="flex: 1;">
                     <label for="lead-appointment-day">اليوم</label>
@@ -1641,7 +1646,7 @@
 
             let statusLabel = STATUS_LABELS[statusStr] || statusStr;
             let appointmentTimeDisplay = '-';
-            if (statusStr === 'Appointment Booked' && l.appointment_time) {
+            if (l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-") {
                 const formattedTime = formatAppointmentTimeArabic(l.appointment_time);
                 if (formattedTime) {
                     appointmentTimeDisplay = formattedTime;
@@ -1682,7 +1687,7 @@
                                     </div>
                                     
                                     <div class="compact-details" style="font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 6px;">
-                                        ${l.appointment_time && statusStr === 'Appointment Booked' ? `<div style="color: #ffc107; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; gap: 4px;">📅 ${appointmentTimeDisplay}</div>` : ''}
+                                        ${l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-" ? `<div style="color: #ffc107; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; gap: 4px;">📅 ${appointmentTimeDisplay}</div>` : ''}
                                         <div style="font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes || ''}">📝 ${l.notes || '-'}</div>
                                     </div>
                                 </div>
@@ -1763,7 +1768,8 @@
         document.getElementById('lead-notes').value = "";
         
         // إخفاء حقل الموعد وتحديد قيم اليوم الحالي تلقائياً
-        document.getElementById('appointment-time-group').style.display = "none";
+        document.getElementById('lead-has-appointment').checked = false;
+        toggleAppointmentInputs(false);
         const today = new Date();
         document.getElementById('lead-appointment-month').value = String(today.getMonth() + 1);
         document.getElementById('lead-appointment-day').value = String(today.getDate());
@@ -1782,13 +1788,13 @@
         document.getElementById('lead-status').value = l.status;
 
         // التحقق من إظهار حقل الموعد وتوزيع البيانات على القوائم المنسدلة
-        const appointmentGroup = document.getElementById('appointment-time-group');
         const daySelect = document.getElementById('lead-appointment-day');
         const monthSelect = document.getElementById('lead-appointment-month');
         const timeSelect = document.getElementById('lead-appointment-time-select');
         
-        if (l.status === 'Appointment Booked') {
-            appointmentGroup.style.display = 'flex';
+        if (l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-") {
+            document.getElementById('lead-has-appointment').checked = true;
+            toggleAppointmentInputs(true);
             const parts = (l.appointment_time || '').split(' ');
             const appDate = parts[0] || '';
             const rawTime = parts[1] || '12:00';
@@ -1808,7 +1814,8 @@
             }
             timeSelect.value = appTime;
         } else {
-            appointmentGroup.style.display = 'none';
+            document.getElementById('lead-has-appointment').checked = false;
+            toggleAppointmentInputs(false);
             const today = new Date();
             monthSelect.value = String(today.getMonth() + 1);
             daySelect.value = String(today.getDate());
@@ -1847,7 +1854,8 @@
         const currentYear = new Date().getFullYear();
         const formattedMonth = ('0' + rawAppMonth).slice(-2);
         const formattedDay = ('0' + rawAppDay).slice(-2);
-        const cleanAppTime = cleanStatus === 'Appointment Booked' ? `${currentYear}-${formattedMonth}-${formattedDay} ${rawAppTime}` : '';
+        const hasAppt = document.getElementById('lead-has-appointment').checked;
+        const cleanAppTime = hasAppt ? `${currentYear}-${formattedMonth}-${formattedDay} ${rawAppTime}` : '';
 
         const newLead = {
             fullname: cleanFullname,
@@ -2252,20 +2260,15 @@
             });
         }
 
-        // مستمع تغيير الحالة لإظهار حقل الموعد
+        // مستمع تغيير الحالة لتفعيل حقل الموعد تلقائياً للتسهيل
         const statusEl = document.getElementById('lead-status');
         if (statusEl) {
             statusEl.addEventListener('change', function(e) {
-                const appointmentGroup = document.getElementById('appointment-time-group');
-                if (appointmentGroup) {
-                    if (e.target.value === 'Appointment Booked') {
-                        appointmentGroup.style.display = 'flex';
-                    } else {
-                        appointmentGroup.style.display = 'none';
-                        const today = new Date();
-                        document.getElementById('lead-appointment-month').value = String(today.getMonth() + 1);
-                        document.getElementById('lead-appointment-day').value = String(today.getDate());
-                        document.getElementById('lead-appointment-time-select').value = '12:00';
+                if (e.target.value === 'Appointment Booked') {
+                    const chk = document.getElementById('lead-has-appointment');
+                    if (chk) {
+                        chk.checked = true;
+                        toggleAppointmentInputs(true);
                     }
                 }
             });
@@ -2750,6 +2753,11 @@
 
     // ==================== وظائف الموبايل الجديدة (شريط التنقل السفلي والدرج السفلي) ====================
 
+    function toggleAppointmentInputs(visible) {
+        const group = document.getElementById('appointment-time-group');
+        if (group) group.style.display = visible ? 'flex' : 'none';
+    }
+
     function switchMobileTab(tabId, el) {
         document.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.remove('active'));
         if (el) el.classList.add('active');
@@ -2796,7 +2804,7 @@
         
         const apptGroup = document.getElementById('bs-client-appt-group');
         const apptVal = document.getElementById('bs-client-appt');
-        if (lead.status === 'Appointment Booked' && lead.appointment_time) {
+        if (lead.appointment_time && String(lead.appointment_time).trim() !== "" && String(lead.appointment_time).trim() !== "-") {
             apptGroup.style.display = 'flex';
             apptVal.innerText = formatAppointmentTimeArabic(lead.appointment_time);
         } else {
