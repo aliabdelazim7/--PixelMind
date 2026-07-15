@@ -664,6 +664,14 @@
             .compact-details {
                 font-size: 0.7rem !important;
             }
+        /* إخفاء شريط التنقل السفلي والدرج التفاعلي افتراضياً على شاشات الكمبيوتر */
+        .bottom-nav {
+            display: none;
+        }
+        @media (min-width: 769px) {
+            .bottom-sheet {
+                display: none !important;
+            }
         }
 
         /* ==================== تنسيقات واجهة الموبايل المتكاملة (Mobile App Interface) ==================== */
