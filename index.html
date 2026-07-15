@@ -1439,6 +1439,14 @@
 
         loadSettingsFields(); // تعبئة حقول صفحة الإعدادات تلقائياً عند بدء التشغيل
 
+        // إخفاء عناصر الموبايل برمجياً على الديسكتوب للتأكيد وتفادي مشاكل كاش المتصفح القديم
+        if (window.innerWidth > 768) {
+            const nav = document.querySelector('.bottom-nav');
+            const sheet = document.getElementById('mobile-bottom-sheet');
+            if (nav) nav.style.setProperty('display', 'none', 'important');
+            if (sheet) sheet.style.setProperty('display', 'none', 'important');
+        }
+
         updateDbStatus('status-connecting', 'جاري المزامنة في الخلفية...');
 
         // 1. تحميل فوري وسريع من الذاكرة المحلية
