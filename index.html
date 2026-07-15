@@ -665,6 +665,257 @@
                 font-size: 0.7rem !important;
             }
         }
+
+        /* ==================== تنسيقات واجهة الموبايل المتكاملة (Mobile App Interface) ==================== */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 80px !important; /* مساحة لشريط التنقل السفلي */
+            }
+            .container {
+                padding: 10px;
+            }
+            header {
+                padding: 10px 0 !important;
+                margin-bottom: 15px !important;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .header-actions {
+                display: none !important; /* إخفاء الأزرار المزدحمة بالكامل */
+            }
+            
+            /* شريط التنقل السفلي الثابت */
+            .bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 64px;
+                background: rgba(18, 18, 18, 0.85);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border-top: 1px solid var(--border-color);
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                z-index: 999;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .bottom-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                color: var(--text-secondary);
+                text-decoration: none;
+                font-size: 0.75rem;
+                font-weight: 700;
+                background: none;
+                border: none;
+                cursor: pointer;
+                gap: 4px;
+                transition: var(--transition);
+                flex: 1;
+                font-family: var(--font-family);
+            }
+            .bottom-nav-item i {
+                font-size: 1.25rem;
+                font-style: normal;
+            }
+            .bottom-nav-item.active {
+                color: var(--text-primary);
+            }
+            .bottom-nav-item.btn-add-nav {
+                background-color: var(--accent-white);
+                color: #000;
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                justify-content: center;
+                flex: 0 0 44px;
+                box-shadow: 0 4px 10px rgba(255,255,255,0.2);
+            }
+            .bottom-nav-item.btn-add-nav i {
+                font-size: 1.4rem;
+                line-height: 1;
+            }
+            
+            /* كروت العملاء للموبايل (iOS style) */
+            .mobile-lead-card {
+                background-color: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px 14px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 8px;
+                cursor: pointer;
+                transition: var(--transition);
+                text-align: right;
+            }
+            .mobile-lead-card:active {
+                background-color: var(--bg-secondary);
+            }
+            .mobile-avatar {
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                font-size: 1.1rem;
+                flex-shrink: 0;
+            }
+            .mobile-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .mobile-name {
+                font-weight: 800;
+                font-size: 0.95rem;
+                color: var(--text-primary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin-bottom: 2px;
+            }
+            .mobile-sub {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .mobile-action {
+                flex-shrink: 0;
+            }
+            .mobile-wa-btn {
+                background-color: #25d366;
+                color: white;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.95rem;
+                text-decoration: none;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            }
+
+            /* درج التفاصيل السفلي (Bottom Sheet) */
+            .bottom-sheet {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 2000;
+                visibility: hidden;
+                transition: visibility 0.3s ease;
+            }
+            .bottom-sheet.active {
+                visibility: visible;
+            }
+            .bottom-sheet-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0,0,0,0.75);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                backdrop-filter: blur(2px);
+            }
+            .bottom-sheet.active .bottom-sheet-overlay {
+                opacity: 1;
+            }
+            .bottom-sheet-content {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: var(--bg-card);
+                border-top: 1px solid var(--border-color);
+                border-radius: 20px 20px 0 0;
+                padding: 16px 20px 30px 20px;
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                max-height: 85vh;
+                overflow-y: auto;
+            }
+            .bottom-sheet.active .bottom-sheet-content {
+                transform: translateY(0);
+            }
+            .bottom-sheet-drag-handle {
+                width: 40px;
+                height: 4px;
+                background-color: var(--border-hover);
+                border-radius: 2px;
+                margin: 0 auto 15px auto;
+            }
+            .bottom-sheet-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+            .bottom-sheet-header h2 {
+                font-size: 1.15rem;
+                font-weight: 800;
+                color: var(--text-primary);
+            }
+            .bs-info-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-height: 44px;
+                border-bottom: 1px solid rgba(255,255,255,0.03);
+                padding: 4px 0;
+                font-size: 0.85rem;
+            }
+            .bs-label {
+                color: var(--text-secondary);
+                font-weight: 700;
+            }
+            .bs-val {
+                color: var(--text-primary);
+            }
+            .bs-notes-box {
+                background-color: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 12px;
+                width: 100%;
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+                min-height: 70px;
+                white-space: pre-wrap;
+                text-align: right;
+                font-family: var(--font-family);
+                line-height: 1.5;
+            }
+            .bs-template-btn {
+                flex: 0 0 auto;
+                background-color: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                color: var(--text-primary);
+                padding: 8px 14px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                border-radius: 6px;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: var(--transition);
+                font-family: var(--font-family);
+            }
+            .bs-template-btn:active {
+                background-color: var(--border-hover);
+            }
+        }
     </style>
 
     <!-- Meta Pixel Code -->
@@ -721,6 +972,7 @@
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('leads')">قائمة العملاء</button>
         <button class="tab-btn" onclick="switchTab('charts')" id="charts-tab-btn">إحصائيات مراحل البيع</button>
+        <button class="tab-btn" onclick="switchTab('settings')" id="settings-tab-btn">⚙️ الإعدادات</button>
     </div>
 
     <!-- TAB: Leads -->
@@ -837,6 +1089,32 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- TAB: Settings (صفحة الإعدادات والربط) -->
+    <div id="settings-tab" class="tab-content" style="max-width: 600px; margin: 0 auto;">
+        <div class="chart-card" style="padding: 24px; border: 1px solid var(--border-color); background-color: var(--bg-card); border-radius: 8px;">
+            <h2 style="font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; color: var(--text-primary); text-align: right;">⚙️ إعدادات النظام والربط</h2>
+            <form id="settings-form" onsubmit="saveSettings(event)">
+                <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--text-primary); text-align: right;">📡 إعدادات ربط فيسبوك (Meta CAPI)</h3>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="meta-pixel-id" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">معرف بكسل فيسبوك (Meta Pixel ID)</label>
+                    <input type="text" id="meta-pixel-id" placeholder="مثال: 123456789012345" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="meta-access-token" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">رمز الوصول للتحويلات (Meta CAPI Access Token)</label>
+                    <textarea id="meta-access-token" rows="3" placeholder="أدخل توكن التحويلات الخاص بفيسبوك هنا..." style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; resize: vertical; outline: none;"></textarea>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; direction: rtl; justify-content: flex-start;">
+                    <input type="checkbox" id="meta-capi-active" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                    <label for="meta-capi-active" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">تفعيل إرسال عملاء الـ Done تلقائياً لميتا (CAPI)</label>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem;">حفظ الإعدادات</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -984,35 +1262,7 @@
     </div>
 </div>
 
-<!-- مودال إعدادات النظام والربط (Settings Modal) -->
-<div id="settings-modal" class="modal-overlay">
-    <div class="modal" style="max-width: 500px;">
-        <div class="modal-header">
-            <div class="modal-title" id="settings-modal-title">⚙️ إعدادات النظام والربط</div>
-            <button class="modal-close" onclick="closeSettingsModal()">&times;</button>
-        </div>
-        <form id="settings-form" onsubmit="saveSettings(event)">
-            <h3 style="font-size: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 12px; color: var(--text-primary);">📡 إعدادات ربط فيسبوك (Meta CAPI)</h3>
-            <div class="form-group">
-                <label for="meta-pixel-id">معرف بكسل فيسبوك (Meta Pixel ID)</label>
-                <input type="text" id="meta-pixel-id" placeholder="مثال: 123456789012345" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px;">
-            </div>
-            <div class="form-group">
-                <label for="meta-access-token">رمز الوصول للتحويلات (Meta CAPI Access Token)</label>
-                <textarea id="meta-access-token" rows="3" placeholder="أدخل توكن التحويلات الخاص بفيسبوك هنا..." style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; resize: vertical;"></textarea>
-            </div>
-            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px;">
-                <input type="checkbox" id="meta-capi-active" style="width: 18px; height: 18px; cursor: pointer;">
-                <label for="meta-capi-active" style="margin: 0; cursor: pointer; font-weight: 700;">تفعيل إرسال عملاء الـ Done تلقائياً لميتا (CAPI)</label>
-            </div>
 
-            <div class="modal-footer" style="margin-top: 20px;">
-                <button type="button" class="btn btn-secondary" onclick="closeSettingsModal()">إلغاء</button>
-                <button type="submit" class="btn">حفظ الإعدادات</button>
-            </div>
-        </form>
-    </div>
-</div>
 
 <!-- JS Core Logic -->
 <script>
@@ -1173,6 +1423,8 @@
         if (localStorage.getItem('meta_capi_active') === null) {
             localStorage.setItem('meta_capi_active', 'true');
         }
+
+        loadSettingsFields(); // تعبئة حقول صفحة الإعدادات تلقائياً عند بدء التشغيل
 
         updateDbStatus('status-connecting', 'جاري المزامنة في الخلفية...');
 
@@ -1399,44 +1651,62 @@
             if (currentViewMode === 'compact') {
                 // ريندر كروت مدمجة للشبكة
                 if (gridContainer) {
-                    gridContainer.innerHTML += `
-                        <div class="compact-lead-card" style="border-top: 4px solid ${STATUS_COLORS[statusStr] || '#444'}; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
-                            <div>
-                                <div class="compact-header" style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
-                                    <input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()" style="width: 16px; height: 16px; margin: 0; flex-shrink: 0;">
-                                    <span class="compact-name" style="font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);" title="${fullnameStr}">${fullnameStr}</span>
+                    const isMobile = window.innerWidth <= 768;
+                    if (isMobile) {
+                        gridContainer.innerHTML += `
+                            <div class="mobile-lead-card" onclick="openLeadBottomSheet(${index})" style="border-right: 4px solid ${STATUS_COLORS[statusStr] || '#444'};">
+                                <div class="mobile-avatar" style="background-color: ${STATUS_COLORS[statusStr] + '22'}; color: ${STATUS_COLORS[statusStr]};">
+                                    ${fullnameStr.charAt(0) || 'ع'}
                                 </div>
-                                
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
-                                    <span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}" style="font-size: 0.65rem; padding: 2px 6px; white-space: nowrap;">${statusLabel}</span>
-                                    <span style="font-size: 0.75rem; color: var(--text-secondary); direction: ltr; font-weight: 600;">${phoneStr}</span>
+                                <div class="mobile-info">
+                                    <div class="mobile-name">${fullnameStr}</div>
+                                    <div class="mobile-sub">${phoneStr} • <span style="color: ${STATUS_COLORS[statusStr]}; font-weight: 700;">${statusLabel}</span></div>
                                 </div>
-                                
-                                <div class="compact-details" style="font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 6px;">
-                                    ${l.appointment_time && statusStr === 'Appointment Booked' ? `<div style="color: #ffc107; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; gap: 4px;">📅 ${appointmentTimeDisplay}</div>` : ''}
-                                    <div style="font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes || ''}">📝 ${l.notes || '-'}</div>
+                                <div class="mobile-action" onclick="event.stopPropagation();">
+                                    <a href="${waUrl}" target="_blank" class="mobile-wa-btn">💬</a>
                                 </div>
                             </div>
-                            
-                            <div class="compact-actions" style="display: flex; gap: 6px; justify-content: space-between; align-items: center; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 8px;">
-                                <a href="${waUrl}" target="_blank" style="background-color: #25d366; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="واتساب">💬</a>
-                                
-                                <div style="position: relative; width: 28px; height: 28px;">
-                                    <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr}')" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
-                                        <option value="">✍️</option>
-                                        <option value="welcome">🗣️ ترحيب</option>
-                                        <option value="followup">🕒 متابعة</option>
-                                        <option value="appointment">📅 موعد</option>
-                                        <option value="offer">📄 عرض</option>
-                                    </select>
-                                    <div style="width: 100%; height: 100%; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; z-index: 1;">✍️</div>
+                        `;
+                    } else {
+                        gridContainer.innerHTML += `
+                            <div class="compact-lead-card" style="border-top: 4px solid ${STATUS_COLORS[statusStr] || '#444'}; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                                <div>
+                                    <div class="compact-header" style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+                                        <input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()" style="width: 16px; height: 16px; margin: 0; flex-shrink: 0;">
+                                        <span class="compact-name" style="font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);" title="${fullnameStr}">${fullnameStr}</span>
+                                    </div>
+                                    
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
+                                        <span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}" style="font-size: 0.65rem; padding: 2px 6px; white-space: nowrap;">${statusLabel}</span>
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary); direction: ltr; font-weight: 600;">${phoneStr}</span>
+                                    </div>
+                                    
+                                    <div class="compact-details" style="font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 6px;">
+                                        ${l.appointment_time && statusStr === 'Appointment Booked' ? `<div style="color: #ffc107; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; gap: 4px;">📅 ${appointmentTimeDisplay}</div>` : ''}
+                                        <div style="font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes || ''}">📝 ${l.notes || '-'}</div>
+                                    </div>
                                 </div>
                                 
-                                <button class="btn-icon" onclick="openEditLeadModal(${index})" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; padding: 0;" title="تعديل">✏️</button>
-                                <button class="btn-icon" onclick="deleteLead(${index})" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(220,53,69,0.2); background-color: rgba(220,53,69,0.05); color: #ff5252; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; padding: 0;" title="حذف">🗑️</button>
+                                <div class="compact-actions" style="display: flex; gap: 6px; justify-content: space-between; align-items: center; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                                    <a href="${waUrl}" target="_blank" style="background-color: #25d366; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="واتساب">💬</a>
+                                    
+                                    <div style="position: relative; width: 28px; height: 28px;">
+                                        <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr}')" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
+                                            <option value="">✍️</option>
+                                            <option value="welcome">🗣️ ترحيب</option>
+                                            <option value="followup">🕒 متابعة</option>
+                                            <option value="appointment">📅 موعد</option>
+                                            <option value="offer">📄 عرض</option>
+                                        </select>
+                                        <div style="width: 100%; height: 100%; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; z-index: 1;">✍️</div>
+                                    </div>
+                                    
+                                    <button class="btn-icon" onclick="openEditLeadModal(${index})" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; padding: 0;" title="تعديل">✏️</button>
+                                    <button class="btn-icon" onclick="deleteLead(${index})" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(220,53,69,0.2); background-color: rgba(220,53,69,0.05); color: #ff5252; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; padding: 0;" title="حذف">🗑️</button>
+                                </div>
                             </div>
-                        </div>
-                    `;
+                        `;
+                    }
                 }
             } else {
                 // ريندر صفوف جدول كاملة
@@ -2478,6 +2748,181 @@
         }
     }
 
+    // ==================== وظائف الموبايل الجديدة (شريط التنقل السفلي والدرج السفلي) ====================
+
+    function switchMobileTab(tabId, el) {
+        document.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.remove('active'));
+        if (el) el.classList.add('active');
+        switchTab(tabId);
+    }
+
+    function openSettingsModal() {
+        switchTab('settings');
+    }
+
+    function closeSettingsModal() {
+        // لم نعد نستخدم مودال الإعدادات، بل نستخدم التبويب
+    }
+
+    function loadSettingsFields() {
+        const pixelId = localStorage.getItem('meta_pixel_id') || '1710050566782840';
+        const accessToken = localStorage.getItem('meta_access_token') || 'EAAW648mk5xEBRyZB7Nm8PDYDoZA1WM9ZAj4ZBdFlfjpL2NayPZCfDOzSIc876VmbnUTxnXx7NBLXRuetuotDZBvhvBBRuLlZCs2PryJpkA9TQHGLSDEBUSbNKvgw9SkcwzLP1ZBeVnseJnJctYcSNxdqr5Q69tigcPZBXcVCXm8pAnxmpRx5H2pElPUMDw34PqYC5MwZDZD';
+        const capiActive = localStorage.getItem('meta_capi_active') !== 'false';
+        
+        const pxEl = document.getElementById('meta-pixel-id');
+        const tokEl = document.getElementById('meta-access-token');
+        const actEl = document.getElementById('meta-capi-active');
+        
+        if (pxEl) pxEl.value = pixelId;
+        if (tokEl) tokEl.value = accessToken;
+        if (actEl) actEl.checked = capiActive;
+    }
+
+    let currentSelectedLeadIndexForBs = null;
+    
+    function openLeadBottomSheet(index) {
+        currentSelectedLeadIndexForBs = index;
+        const lead = leads[index];
+        if (!lead) return;
+
+        // تعبئة البيانات في الدرج السفلي للموبايل
+        document.getElementById('bs-client-name').innerText = lead.fullname || '-';
+        document.getElementById('bs-client-phone').innerText = lead.phone || '-';
+        
+        const statusLabel = STATUS_LABELS[lead.status] || lead.status;
+        const statusBadge = document.getElementById('bs-client-status');
+        statusBadge.innerText = statusLabel;
+        statusBadge.className = 'badge ' + (STATUS_BADGES[lead.status] || 'badge-newlead');
+        
+        const apptGroup = document.getElementById('bs-client-appt-group');
+        const apptVal = document.getElementById('bs-client-appt');
+        if (lead.status === 'Appointment Booked' && lead.appointment_time) {
+            apptGroup.style.display = 'flex';
+            apptVal.innerText = formatAppointmentTimeArabic(lead.appointment_time);
+        } else {
+            apptGroup.style.display = 'none';
+        }
+        
+        document.getElementById('bs-client-notes').innerText = lead.notes || 'لا توجد ملاحظات حالياً.';
+
+        // تعيين أفعال أزرار الدرج السفلي
+        document.getElementById('bs-btn-edit').onclick = function() {
+            closeLeadBottomSheet();
+            openEditLeadModal(index);
+        };
+        
+        document.getElementById('bs-btn-delete').onclick = function() {
+            closeLeadBottomSheet();
+            deleteLead(index);
+        };
+
+        // تعبئة قوالب الواتساب السريعة التفاعلية
+        const templatesContainer = document.querySelector('.bs-templates-row');
+        templatesContainer.innerHTML = '';
+        
+        const phoneClean = String(lead.phone || "").replace(/[\+\s\-\(\)]/g, '');
+        const templates = [
+            { key: 'welcome', label: '🗣️ ترحيب' },
+            { key: 'followup', label: '🕒 متابعة' },
+            { key: 'appointment', label: '📅 موعد' },
+            { key: 'offer', label: '📄 العرض' }
+        ];
+
+        templates.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = 'bs-template-btn';
+            btn.innerText = t.label;
+            btn.onclick = function() {
+                sendWhatsAppTemplateDirectly(t.key, phoneClean, lead.fullname);
+            };
+            templatesContainer.appendChild(btn);
+        });
+
+        document.getElementById('mobile-bottom-sheet').classList.add('active');
+    }
+
+    function closeLeadBottomSheet() {
+        const bs = document.getElementById('mobile-bottom-sheet');
+        if (bs) bs.classList.remove('active');
+    }
+    
+    function sendWhatsAppTemplateDirectly(templateKey, phone, fullname) {
+        const templates = {
+            welcome: `أهلاً بك يا فندم ${fullname}، تواصلنا معك بخصوص طلبك ونحن في خدمتك لتقديم كافة التفاصيل والرد على استفساراتك.`,
+            followup: `السلام عليكم يا فندم ${fullname}، بنتابع مع حضرتك بخصوص العرض والتفاصيل السابقة التي ناقشناها. هل هناك أي استفسار يمكننا مساعدتك به؟`,
+            appointment: `أهلاً بك يا فندم ${fullname}، تذكير بموعدنا اليوم إن شاء الله. يسعدنا تشريفك لنا وتواجدك في الموعد المحدد.`,
+            offer: `أهلاً بك يا فندم ${fullname}، نرسل لحضرتك تفاصيل العرض والأسعار بخصوص استفسارك الكريم. يسعدنا تواصلك معنا.`
+        };
+        
+        const text = templates[templateKey];
+        if (text) {
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+    }
+
 </script>
+
+<!-- شريط التنقل السفلي للموبايل (Mobile Bottom Navigation Bar) -->
+<div class="bottom-nav">
+    <button class="bottom-nav-item active" onclick="switchMobileTab('leads', this)">
+        <i>👥</i>
+        <span>العملاء</span>
+    </button>
+    <button class="bottom-nav-item" onclick="switchMobileTab('charts', this)">
+        <i>📊</i>
+        <span>الإحصائيات</span>
+    </button>
+    <button class="bottom-nav-item btn-add-nav" onclick="openNewLeadModal()">
+        <i>＋</i>
+    </button>
+    <button class="bottom-nav-item" onclick="switchMobileTab('settings', this)">
+        <i>⚙</i>
+        <span>الإعدادات</span>
+    </button>
+</div>
+
+<!-- درُج التفاصيل السفلي للموبايل (Mobile Detail Bottom Sheet) -->
+<div id="mobile-bottom-sheet" class="bottom-sheet">
+    <div class="bottom-sheet-overlay" onclick="closeLeadBottomSheet()"></div>
+    <div class="bottom-sheet-content">
+        <div class="bottom-sheet-drag-handle"></div>
+        <div class="bottom-sheet-header">
+            <h2 id="bs-client-name">الاسم بالكامل</h2>
+            <button class="modal-close" onclick="closeLeadBottomSheet()">&times;</button>
+        </div>
+        <div class="bottom-sheet-body">
+            <div class="bs-info-item">
+                <span class="bs-label">📞 رقم الهاتف:</span>
+                <span id="bs-client-phone" class="bs-val" style="direction: ltr; font-weight: 700;">-</span>
+            </div>
+            <div class="bs-info-item">
+                <span class="bs-label">🏷️ الحالة الحالية:</span>
+                <span id="bs-client-status" class="badge">-</span>
+            </div>
+            <div class="bs-info-item" id="bs-client-appt-group">
+                <span class="bs-label">📅 الموعد المحجوز:</span>
+                <span id="bs-client-appt" class="bs-val" style="color: #ffc107; font-weight: 700;">-</span>
+            </div>
+            <div class="bs-info-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <span class="bs-label">📝 الملاحظات وسجل المتابعة:</span>
+                <div id="bs-client-notes" class="bs-notes-box">-</div>
+            </div>
+            
+            <div class="bs-actions-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <button class="btn btn-secondary" id="bs-btn-edit" style="justify-content: center; font-size: 0.85rem; padding: 12px; height: auto;">✏️ تعديل</button>
+                <button class="btn btn-danger" id="bs-btn-delete" style="justify-content: center; background-color: #dc3545; color: white; border-color: #dc3545; font-size: 0.85rem; padding: 12px; height: auto;">🗑️ حذف</button>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">✍️ إرسال قالب سريع بالواتساب:</label>
+                <div class="bs-templates-row" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch;">
+                    <!-- يتم ملء القوالب برمجياً -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
