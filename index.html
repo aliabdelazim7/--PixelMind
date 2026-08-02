@@ -1,0 +1,3440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ليد فلو - نظام إدارة العملاء البسيط</title>
+    <!-- PWA meta tags and link manifest -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ليد فلو">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <!-- Google Fonts: Cairo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0b0b0b;
+            --bg-secondary: #121212;
+            --bg-card: #181818;
+            --border-color: #262626;
+            --border-hover: #3a3a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #a3a3a3;
+            --text-muted: #666666;
+            --accent-white: #ffffff;
+            --accent-grey: #404040;
+            --font-family: 'Cairo', sans-serif;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            padding-bottom: 50px;
+            text-align: right;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1550px;
+            width: 95%;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .logo-section h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+        }
+
+        .logo-section p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        /* مؤشر حالة الاتصال بقاعدة البيانات */
+        .db-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-top: 8px;
+            padding: 2px 8px;
+            border-radius: 4px;
+            border: 1px solid transparent;
+            font-family: var(--font-family);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .status-connecting {
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border-color: var(--border-color);
+        }
+        .status-connecting .status-dot {
+            background-color: #888;
+            animation: pulse-dot 1.5s infinite ease-in-out;
+        }
+
+        .status-connected {
+            background-color: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+            border-color: rgba(40, 167, 69, 0.2);
+        }
+        .status-connected .status-dot {
+            background-color: #28a745;
+        }
+
+        .status-error {
+            background-color: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-color: rgba(220, 53, 69, 0.2);
+        }
+        .status-error .status-dot {
+            background-color: #dc3545;
+        }
+
+        @keyframes pulse-dot {
+            0% { opacity: 0.4; }
+            50% { opacity: 1; }
+            100% { opacity: 0.4; }
+        }
+
+        .btn {
+            background-color: var(--accent-white);
+            color: #000;
+            border: 1px solid var(--accent-white);
+            padding: 8px 24px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+            font-family: var(--font-family);
+        }
+
+        .btn:hover {
+            background-color: transparent;
+            color: var(--text-primary);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            font-weight: 600;
+            padding: 8px 16px;
+        }
+
+        .btn-secondary:hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--border-hover);
+        }
+
+        /* KPI Dashboard Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: var(--transition);
+            font-family: var(--font-family);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .tab-btn.active {
+            color: var(--text-primary);
+            border-bottom-color: var(--accent-white);
+            font-weight: 700;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Controls */
+        .control-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 16px;
+        }
+
+        .search-wrapper {
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-input {
+            width: 100%;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: var(--font-family);
+            outline: none;
+        }
+
+        .filter-wrapper {
+            display: flex;
+            gap: 12px;
+        }
+
+        .select-filter {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            font-family: var(--font-family);
+            outline: none;
+            cursor: pointer;
+        }
+
+        /* Table */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: var(--bg-card);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: right;
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: var(--bg-secondary);
+            padding: 16px 20px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+
+        tr:hover td {
+            background-color: rgba(255,255,255,0.02);
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .badge-newlead { background-color: rgba(248, 249, 250, 0.15); color: #f8f9fa; border-color: rgba(248, 249, 250, 0.3); }
+        .badge-contacted { background-color: rgba(0, 123, 255, 0.15); color: #66b0ff; border-color: rgba(0, 123, 255, 0.3); }
+        .badge-followuprequired { background-color: rgba(253, 126, 20, 0.15); color: #fdaa60; border-color: rgba(253, 126, 20, 0.3); }
+        .badge-appointmentbooked { background-color: rgba(111, 66, 193, 0.15); color: #b78eff; border-color: rgba(111, 66, 193, 0.3); }
+        .badge-proposalsent { background-color: rgba(232, 62, 140, 0.15); color: #f584b7; border-color: rgba(232, 62, 140, 0.3); }
+        .badge-negotiating { background-color: rgba(255, 193, 7, 0.15); color: #ffe066; border-color: rgba(255, 193, 7, 0.3); }
+        .badge-inprogress { background-color: rgba(23, 162, 184, 0.15); color: #17a2b8; border-color: rgba(23, 162, 184, 0.3); }
+        .badge-won { background-color: #ffffff; color: #000000; border-color: #ffffff; }
+        .badge-lost { background-color: rgba(220, 53, 69, 0.15); color: #ff6b78; border-color: rgba(220, 53, 69, 0.3); }
+        .badge-ghosted { background-color: rgba(108, 117, 125, 0.15); color: #888; border-color: rgba(108, 117, 125, 0.2); }
+        .badge-notinterested { background-color: rgba(52, 58, 64, 0.15); color: #777; border-color: rgba(52, 58, 64, 0.2); }
+
+        .wa-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--text-primary);
+            text-decoration: none;
+            border: 1px solid var(--border-color);
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            transition: var(--transition);
+            background-color: rgba(255,255,255,0.05);
+        }
+
+        .wa-link:hover {
+            background-color: var(--accent-white);
+            color: #000;
+            border-color: var(--accent-white);
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.6rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        input, select {
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 10px 14px;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            font-family: var(--font-family);
+            outline: none;
+            text-align: right;
+            width: 100%;
+        }
+
+        input:focus, select:focus {
+            border-color: var(--border-hover);
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+            margin-top: 15px;
+        }
+
+        /* Charts Layout */
+        .chart-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 24px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+            height: 100%;
+        }
+        /* الاستعلامات المتجاوبة للهواتف والأجهزة اللوحية */
+        @media (max-width: 768px) {
+            .container {
+                padding: 12px;
+            }
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .header-actions {
+                width: 100%;
+                display: flex !important;
+                gap: 8px;
+                overflow-x: auto;
+                padding-bottom: 8px;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            .header-actions::-webkit-scrollbar {
+                display: none; /* إخفاء شريط التمرير لمظهر جمالي ونظيف */
+            }
+            .header-actions .btn {
+                flex: 0 0 auto !important;
+                font-size: 0.85rem;
+                padding: 8px 14px;
+            }
+            .kpi-grid {
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 8px !important;
+                margin-bottom: 16px !important;
+            }
+            .kpi-card {
+                padding: 10px !important;
+                text-align: center;
+            }
+            .kpi-card h3 {
+                font-size: 0.7rem !important;
+                margin-bottom: 4px !important;
+            }
+            .kpi-value {
+                font-size: 1.15rem !important;
+                font-weight: 800 !important;
+            }
+            .kpi-subtitle {
+                font-size: 0.6rem !important;
+                opacity: 0.7;
+            }
+            .control-bar {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
+            .search-wrapper {
+                max-width: 100%;
+            }
+            .filter-wrapper {
+                width: 100%;
+            }
+            .select-filter {
+                flex: 1;
+                font-size: 0.85rem;
+            }
+            .stats-dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        @media (max-width: 768px) {
+            table, thead, tbody, th, td, tr {
+                display: block;
+            }
+            thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+            tr {
+                margin-bottom: 20px;
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                background-color: var(--bg-card);
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+            }
+            td {
+                border: none;
+                padding: 0 !important;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-height: 36px;
+                font-size: 0.9rem;
+                white-space: normal !important;
+            }
+            td::before {
+                content: attr(data-label);
+                font-weight: 700;
+                color: var(--text-secondary);
+                margin-left: 10px;
+                flex-shrink: 0;
+            }
+            
+            /* زر الإجراءات في الكارت */
+            td[data-label="الإجراءات"] {
+                border-top: 1px solid var(--border-color);
+                padding-top: 12px !important;
+                margin-top: 6px;
+                width: 100%;
+            }
+            td[data-label="الإجراءات"]::before {
+                display: none !important;
+            }
+            .action-row {
+                width: 100% !important;
+                display: flex !important;
+                gap: 8px !important;
+            }
+            .action-row .btn {
+                flex: 1 !important;
+                justify-content: center !important;
+                text-align: center !important;
+                padding: 10px !important;
+                font-size: 0.85rem !important;
+            }
+        }
+    </style>
+
+    <style>
+        /* تنسيقات شبكة كروت العملاء المدمجة لتقليل السكرول الطويل */
+        .leads-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 12px;
+            margin-top: 15px;
+        }
+        .compact-lead-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+        .compact-lead-card:hover {
+            border-color: var(--border-hover);
+        }
+        .compact-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .compact-name {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 140px;
+        }
+        .compact-details {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+        .compact-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.03);
+        }
+        @media (max-width: 600px) {
+            .leads-grid-container {
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 8px !important;
+            }
+            .compact-lead-card {
+                padding: 10px 8px !important;
+                gap: 6px !important;
+            }
+            .compact-name {
+                font-size: 0.8rem !important;
+                max-width: 90px !important;
+            }
+            .compact-details {
+                font-size: 0.7rem !important;
+            }
+        }
+
+        /* تنسيقات أزرار الفلترة السريعة (Quick Filter Chips) */
+        .chip-btn {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition);
+            font-family: var(--font-family);
+        }
+        .chip-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+        .chip-btn.active {
+            background-color: var(--text-primary);
+            color: var(--bg-primary);
+            border-color: var(--text-primary);
+        }/* إخفاء شريط التنقل السفلي والدرج التفاعلي افتراضياً على شاشات الكمبيوتر */
+        .bottom-nav {
+            display: none;
+        }
+        @media (min-width: 769px) {
+            .bottom-sheet {
+                display: none !important;
+            }
+        }
+
+        /* ==================== تنسيقات واجهة الموبايل المتكاملة (Mobile App Interface) ==================== */
+        @media (max-width: 768px) {
+            body {
+                padding-bottom: 80px !important; /* مساحة لشريط التنقل السفلي */
+            }
+            .container {
+                padding: 10px;
+            }
+            header {
+                padding: 10px 0 !important;
+                margin-bottom: 15px !important;
+                border-bottom: 1px solid var(--border-color);
+            }
+            .header-actions {
+                display: none !important; /* إخفاء الأزرار المزدحمة بالكامل */
+            }
+            
+            /* شريط التنقل السفلي الثابت */
+            .bottom-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 64px;
+                background: rgba(18, 18, 18, 0.85);
+                backdrop-filter: blur(16px);
+                -webkit-backdrop-filter: blur(16px);
+                border-top: 1px solid var(--border-color);
+                display: flex;
+                justify-content: space-around;
+                align-items: center;
+                z-index: 999;
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .bottom-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                color: var(--text-secondary);
+                text-decoration: none;
+                font-size: 0.75rem;
+                font-weight: 700;
+                background: none;
+                border: none;
+                cursor: pointer;
+                gap: 4px;
+                transition: var(--transition);
+                flex: 1;
+                font-family: var(--font-family);
+            }
+            .bottom-nav-item i {
+                font-size: 1.25rem;
+                font-style: normal;
+            }
+            .bottom-nav-item.active {
+                color: var(--text-primary);
+            }
+            .bottom-nav-item.btn-add-nav {
+                background-color: var(--accent-white);
+                color: #000;
+                width: 44px;
+                height: 44px;
+                border-radius: 50%;
+                justify-content: center;
+                flex: 0 0 44px;
+                box-shadow: 0 4px 10px rgba(255,255,255,0.2);
+            }
+            .bottom-nav-item.btn-add-nav i {
+                font-size: 1.4rem;
+                line-height: 1;
+            }
+            
+            /* كروت العملاء للموبايل (iOS style) */
+            .mobile-lead-card {
+                background-color: var(--bg-card);
+                border: 1px solid var(--border-color);
+                border-radius: 12px;
+                padding: 12px 14px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                margin-bottom: 8px;
+                cursor: pointer;
+                transition: var(--transition);
+                text-align: right;
+            }
+            .mobile-lead-card:active {
+                background-color: var(--bg-secondary);
+            }
+            .mobile-avatar {
+                width: 42px;
+                height: 42px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                font-size: 1.1rem;
+                flex-shrink: 0;
+            }
+            .mobile-info {
+                flex: 1;
+                min-width: 0;
+            }
+            .mobile-name {
+                font-weight: 800;
+                font-size: 0.95rem;
+                color: var(--text-primary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin-bottom: 2px;
+            }
+            .mobile-sub {
+                font-size: 0.75rem;
+                color: var(--text-secondary);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .mobile-action {
+                flex-shrink: 0;
+            }
+            .mobile-wa-btn {
+                background-color: #25d366;
+                color: white;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.95rem;
+                text-decoration: none;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            }
+
+            /* درج التفاصيل السفلي (Bottom Sheet) */
+            .bottom-sheet {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 2000;
+                visibility: hidden;
+                transition: visibility 0.3s ease;
+            }
+            .bottom-sheet.active {
+                visibility: visible;
+            }
+            .bottom-sheet-overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background-color: rgba(0,0,0,0.75);
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                backdrop-filter: blur(2px);
+            }
+            .bottom-sheet.active .bottom-sheet-overlay {
+                opacity: 1;
+            }
+            .bottom-sheet-content {
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background-color: var(--bg-card);
+                border-top: 1px solid var(--border-color);
+                border-radius: 20px 20px 0 0;
+                padding: 16px 20px 30px 20px;
+                transform: translateY(100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                max-height: 85vh;
+                overflow-y: auto;
+            }
+            .bottom-sheet.active .bottom-sheet-content {
+                transform: translateY(0);
+            }
+            .bottom-sheet-drag-handle {
+                width: 40px;
+                height: 4px;
+                background-color: var(--border-hover);
+                border-radius: 2px;
+                margin: 0 auto 15px auto;
+            }
+            .bottom-sheet-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 10px;
+                margin-bottom: 15px;
+            }
+            .bottom-sheet-header h2 {
+                font-size: 1.15rem;
+                font-weight: 800;
+                color: var(--text-primary);
+            }
+            .bs-info-item {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                min-height: 44px;
+                border-bottom: 1px solid rgba(255,255,255,0.03);
+                padding: 4px 0;
+                font-size: 0.85rem;
+            }
+            .bs-label {
+                color: var(--text-secondary);
+                font-weight: 700;
+            }
+            .bs-val {
+                color: var(--text-primary);
+            }
+            .bs-notes-box {
+                background-color: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                border-radius: 8px;
+                padding: 12px;
+                width: 100%;
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+                min-height: 70px;
+                white-space: pre-wrap;
+                text-align: right;
+                font-family: var(--font-family);
+                line-height: 1.5;
+            }
+            .bs-template-btn {
+                flex: 0 0 auto;
+                background-color: var(--bg-primary);
+                border: 1px solid var(--border-color);
+                color: var(--text-primary);
+                padding: 8px 14px;
+                font-size: 0.8rem;
+                font-weight: 700;
+                border-radius: 6px;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: var(--transition);
+                font-family: var(--font-family);
+            }
+            .bs-template-btn:active {
+                background-color: var(--border-hover);
+            }
+        }
+    </style>
+
+    <!-- Meta Pixel Code -->
+    <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1710050566782840');
+    fbq('track', 'PageView');
+    </script>
+    <noscript><img height="1" width="1" style="display:none"
+    src="https://www.facebook.com/tr?id=1710050566782840&ev=PageView&noscript=1"
+    /></noscript>
+    <!-- End Meta Pixel Code -->
+</head>
+<body>
+
+<div class="container">
+    <!-- بنر التنبيه عند فشل الاتصال بقاعدة بيانات جوجل شيت -->
+    <div id="connection-error-banner" style="display:none; background-color:#ff5252; color:white; text-align:center; padding:10px 20px; font-weight:bold; font-size:0.9rem; border-radius:4px; margin-bottom:20px; font-family:'Cairo', sans-serif;"></div>
+    <!-- بنر المزامنة عند وجود عملاء مسجلين أوفلاين -->
+    <div id="sync-warning-banner" style="display:none; background-color:#ffc107; color:#000; text-align:center; padding:10px 20px; font-weight:bold; font-size:0.9rem; border-radius:4px; margin-bottom:20px; font-family:'Cairo', sans-serif; cursor:pointer;" onclick="syncOfflineLeads()"></div>
+    <header>
+        <div class="logo-section">
+            <h1>ليد فلو</h1>
+            <p>نظام إدارة ومتابعة العملاء فائق البساطة</p>
+            <div id="db-status" class="db-status status-connecting">
+                <span class="status-dot"></span>
+                <span id="db-status-text">جاري الاتصال بقاعدة البيانات...</span>
+            </div>
+        </div>
+        <div class="header-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <!-- زر تثبيت التطبيق للأندرويد ومتصفح كروم -->
+            <button id="install-pwa-btn" class="btn" style="display:none; background-color:#28a745; color:white; border-color:#28a745; padding: 8px 14px; font-size: 0.9rem;" onclick="installPWA()">📲 تثبيت</button>
+            <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.9rem;" onclick="sendManualTelegramReport()">📊 تقرير تلجرام</button>
+            <button class="btn btn-danger" id="bulk-delete-btn" style="display: none; background-color: #dc3545; color: white; border-color: #dc3545; padding: 8px 14px; font-size: 0.9rem;" onclick="deleteSelectedLeads()">🗑️ حذف المحدد (0)</button>
+            <!-- <button class="btn btn-secondary" style="padding: 8px 14px; font-size: 0.9rem;" onclick="openSettingsModal()">⚙️ الإعدادات</button> -->
+            <button class="btn" style="padding: 8px 14px; font-size: 0.9rem;" onclick="openNewLeadModal()">+ إضافة عميل</button>
+            <button class="btn btn-secondary" style="padding: 8px 8px; font-size: 0.8rem; opacity: 0.4;" onclick="resetDefaultData()" title="إعادة تعيين البيانات">🔄</button>
+        </div>
+    </header>
+
+    <!-- KPI Dashboard -->
+    <div class="kpi-grid" id="kpi-grid">
+        <!-- Dynically filled -->
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('leads')">قائمة العملاء</button>
+        <button class="tab-btn" onclick="switchTab('charts')" id="charts-tab-btn">إحصائيات مراحل البيع</button>
+        <button class="tab-btn" onclick="switchTab('settings')" id="settings-tab-btn">⚙️ الإعدادات</button>
+    </div>
+
+    <!-- TAB: Leads -->
+    <div id="leads-tab" class="tab-content active">
+        <!-- شريط تنبيه مواعيد اليوم المجدولة -->
+        <div id="today-appointments-banner" style="display: none; background: linear-gradient(135deg, rgba(255,193,7,0.15), rgba(255,152,0,0.15)); border: 1px solid rgba(255,193,7,0.4); border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px; color: #ffc107;">
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 0.9rem;">
+                <span style="font-size: 1.3rem;">🔔</span>
+                <span id="today-banner-text">لديك مواعيد متابعة مجدولة اليوم!</span>
+            </div>
+            <button class="btn" onclick="filterByChip('today', this)" style="padding: 6px 14px; font-size: 0.8rem; background-color: #ffc107; color: #000; border: none; font-weight: 800; border-radius: 6px; cursor: pointer;">عرض مواعيد اليوم 📅</button>
+        </div>
+
+        <!-- أزرار الفلترة السريعة (Quick Filter Chips) -->
+        <div class="filter-chips-container" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; -webkit-overflow-scrolling: touch;">
+            <button class="chip-btn active" onclick="filterByChip('all', this)">✨ الكل (النشطة)</button>
+            <button class="chip-btn" onclick="filterByChip('today', this)">🔥 مواعيد اليوم</button>
+            <button class="chip-btn" onclick="filterByChip('In Progress', this)">⚡ جاري العمل</button>
+            <button class="chip-btn" onclick="filterByChip('Appointment Booked', this)">📅 تم حجز موعد</button>
+            <button class="chip-btn" onclick="filterByChip('Won', this)">🟢 تم البيع</button>
+        </div>
+
+        <div class="control-bar" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <div class="search-wrapper" style="flex: 1; min-width: 200px; position: relative;">
+                <input type="text" id="lead-search" class="search-input" placeholder="ابحث باسم العميل أو رقم الهاتف..." oninput="toggleClearSearchBtn(); resetLimitAndRender();">
+                <button id="clear-search-btn" onclick="clearSearchInput()" style="display: none; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-secondary); font-size: 1rem; cursor: pointer; font-weight: 800;" title="إلغاء البحث">✕</button>
+            </div>
+            <div class="filter-wrapper" style="min-width: 140px;">
+                <select id="month-filter" class="select-filter" onchange="onMonthFilterChange()">
+                    <option value="">📅 كل الشهور</option>
+                </select>
+            </div>
+            <div class="filter-wrapper" style="min-width: 150px;">
+                <select id="status-filter" class="select-filter" onchange="onStatusFilterChange()">
+                    <option value="">كل الحالات</option>
+                    <option value="New Lead">⚪ عميل جديد</option>
+                    <option value="Contacted">🔵 تم الاتصال</option>
+                    <option value="Follow Up Required">🟠 يحتاج متابعة</option>
+                    <option value="Appointment Booked">📅 تم حجز موعد</option>
+                    <option value="Proposal Sent">📄 تم إرسال العرض</option>
+                    <option value="Negotiating">🟡 تفاوض</option>
+                    <option value="In Progress">⚡ جاري العمل</option>
+                    <option value="Won">🟢 تم البيع</option>
+                    <option value="Lost">🔴 خسرنا الصفقة</option>
+                    <option value="Ghosted">⚫ لم يرد (اختفى)</option>
+                    <option value="Not Interested">❌ غير مهتم</option>
+                </select>
+            </div>
+            <!-- زر تصدير الاكسيل UTF-8 -->
+            <button class="btn btn-secondary" onclick="exportLeadsToExcel()" style="padding: 10px 14px; font-size: 0.9rem; flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; gap: 6px;" title="تنزيل قائمة العملاء كملف اكسيل">📥 تصدير Excel</button>
+            <!-- زر نسخ تقرير ملخص اليوم -->
+            <button class="btn btn-secondary" onclick="copyDailySummaryReport()" style="padding: 10px 14px; font-size: 0.9rem; flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; gap: 6px;" title="نسخ تقرير ملخص اليوم للحافظة ومشاركته على واتساب">📊 تقرير اليوم</button>
+            <!-- زر تبديل طريقة العرض لمكافحة سكرول الموبايل الطويل -->
+            <button class="btn btn-secondary" id="view-mode-toggle-btn" onclick="toggleViewMode()" style="padding: 10px 14px; font-size: 0.9rem; flex-shrink: 0; min-height: 44px; display: inline-flex; align-items: center; gap: 6px;">🗂️ عرض الشبكة</button>
+        </div>
+
+        <div class="table-responsive" id="table-view-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px; text-align: center;"><input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAllLeads(this)"></th>
+                        <th>الاسم بالكامل</th>
+                        <th>رقم الهاتف</th>
+                        <th>مراسلة سريعة</th>
+                        <th>حالة العميل</th>
+                        <th>ميعاد الحجز</th>
+                        <th>تاريخ الإضافة</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-table-body">
+                    <!-- Dynically filled -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- وضع عرض شبكة الكروت المدمجة للعملاء -->
+        <div id="grid-view-wrapper" class="leads-grid-container" style="display: none;">
+            <!-- كروت مدمجة تُبنى برمجياً -->
+        </div>
+
+        <!-- حاوية زر تحميل المزيد لمنع الإرهاق الرأسي للموقع -->
+        <div id="load-more-container" style="display: flex; justify-content: center; width: 100%; padding: 15px 0;"></div>
+    </div>
+
+    <!-- TAB: Charts -->
+    <div id="charts-tab" class="tab-content">
+        <div class="visual-stats-container" style="display: flex; flex-direction: column; gap: 24px;">
+            <!-- الصف الأول: كروت ملخصة تفاعلية -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+                <!-- معدل نجاح الصفقات -->
+                <div class="chart-card" style="min-height: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(40, 167, 69, 0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">🎯 معدل تحويل المبيعات</span>
+                        <span id="v-conversion-rate" style="font-size: 1.6rem; font-weight: 800; color: #28a745;">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="v-conversion-progress" style="width: 0%; height: 100%; background-color: #28a745; transition: width 0.6s ease-out; box-shadow: 0 0 10px rgba(40,167,69,0.5);"></div>
+                    </div>
+                </div>
+                <!-- الصفقات الناجحة -->
+                <div class="chart-card" style="min-height: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(255, 255, 255, 0.15);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">🟢 الصفقات المغلقة (Won)</span>
+                        <span id="v-won-count" style="font-size: 1.6rem; font-weight: 800; color: #fff;">0</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="v-won-progress" style="width: 0%; height: 100%; background-color: #fff; transition: width 0.6s ease-out;"></div>
+                    </div>
+                </div>
+                <!-- عملاء قيد المتابعة -->
+                <div class="chart-card" style="min-height: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; border-color: rgba(0, 123, 255, 0.2);">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.85rem; color: var(--text-secondary); font-weight: 700;">⚡ عملاء قيد العمل والاتصال</span>
+                        <span id="v-active-count" style="font-size: 1.6rem; font-weight: 800; color: #007bff;">0</span>
+                    </div>
+                    <div style="width: 100%; height: 6px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                        <div id="v-active-progress" style="width: 0%; height: 100%; background-color: #007bff; transition: width 0.6s ease-out;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الصف الثاني: مخططات المقارنة والتحليل البصري الهادئ -->
+            <div class="stats-dashboard-grid" style="display: grid; grid-template-columns: 3fr 2fr; gap: 20px;">
+                <!-- قمع المبيعات التفاعلي -->
+                <div class="chart-card" style="min-height: auto; padding: 24px;">
+                    <div class="chart-title" style="text-align: right; margin-bottom: 20px; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                        <span>📍 تحليل قمع مراحل البيع</span>
+                    </div>
+                    <div id="visual-pipeline-bars-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- يتم تعبئته ديناميكياً -->
+                    </div>
+                </div>
+
+                <!-- تصنيف الصفقات والنتائج -->
+                <div class="chart-card" style="min-height: auto; padding: 24px;">
+                    <div class="chart-title" style="text-align: right; margin-bottom: 20px; font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                        <span>📊 نتائج الاتصال والصفقات</span>
+                    </div>
+                    <div id="visual-outcomes-container" style="display: flex; flex-direction: column; gap: 16px;">
+                        <!-- يتم تعبئته ديناميكياً -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TAB: Settings (صفحة الإعدادات والربط) -->
+    <div id="settings-tab" class="tab-content" style="max-width: 600px; margin: 0 auto;">
+        <div class="chart-card" style="display: none; padding: 24px; border: 1px solid var(--border-color); background-color: var(--bg-card); border-radius: 8px;">
+            <h2 style="font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; color: var(--text-primary); text-align: right;">⚙️ إعدادات النظام والربط</h2>
+            <form id="settings-form" onsubmit="saveSettings(event)">
+                <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--text-primary); text-align: right;">📡 إعدادات ربط فيسبوك (Meta CAPI)</h3>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="meta-pixel-id" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">معرف بكسل فيسبوك (Meta Pixel ID)</label>
+                    <input type="text" id="meta-pixel-id" placeholder="مثال: 123456789012345" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="meta-access-token" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">رمز الوصول للتحويلات (Meta CAPI Access Token)</label>
+                    <textarea id="meta-access-token" rows="3" placeholder="أدخل توكن التحويلات الخاص بفيسبوك هنا..." style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: monospace; resize: vertical; outline: none;"></textarea>
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 10px; direction: rtl; justify-content: flex-start;">
+                    <input type="checkbox" id="meta-capi-active" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                    <label for="meta-capi-active" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">تفعيل إرسال عملاء الـ Done تلقائياً لميتا (CAPI)</label>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem;">حفظ الإعدادات</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="chart-card" style="padding: 24px; border: 1px solid var(--border-color); background-color: var(--bg-card); border-radius: 8px;">
+            <h2 style="font-size: 1.2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; color: var(--text-primary); text-align: right;">✍️ تخصيص قوالب رسائل الواتساب السريعة</h2>
+            <form id="wa-templates-form" onsubmit="saveCustomWhatsAppTemplates(event)">
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="wa-tpl-welcome" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">🗣️ قالب الترحيب الأول</label>
+                    <textarea id="wa-tpl-welcome" rows="2" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); resize: vertical; outline: none;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="wa-tpl-followup" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">🕒 قالب المتابعة الدوري</label>
+                    <textarea id="wa-tpl-followup" rows="2" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); resize: vertical; outline: none;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="wa-tpl-appointment" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">📅 قالب تأكيد الموعد</label>
+                    <textarea id="wa-tpl-appointment" rows="2" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); resize: vertical; outline: none;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px; text-align: right;">
+                    <label for="wa-tpl-offer" style="display: block; margin-bottom: 6px; font-weight: 700; font-size: 0.85rem; color: var(--text-secondary);">📄 قالب إرسال العرض</label>
+                    <textarea id="wa-tpl-offer" rows="2" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); resize: vertical; outline: none;"></textarea>
+                </div>
+                
+                <div style="margin-top: 20px;">
+                    <button type="submit" class="btn" style="width: 100%; justify-content: center; padding: 12px; font-size: 0.95rem;">حفظ قوالب الواتساب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Add Lead -->
+<div class="modal-overlay" id="lead-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <div class="modal-title" id="lead-modal-title">إضافة عميل جديد</div>
+            <button class="modal-close" onclick="closeLeadModal()">&times;</button>
+        </div>
+        <form id="lead-form" onsubmit="saveLead(event)">
+            <input type="hidden" id="edit-lead-index">
+            
+            <div class="form-group">
+                <label for="lead-fullname">اسم العميل بالكامل *</label>
+                <input type="text" id="lead-fullname" required placeholder="أحمد محمد">
+            </div>
+            
+            <div class="form-group">
+                <label for="lead-phone">رقم الهاتف *</label>
+                <input type="tel" id="lead-phone" required placeholder="201012345678+">
+            </div>
+            
+            <div class="form-group">
+                <label for="lead-status">حالة العميل</label>
+                <select id="lead-status">
+                    <option value="New Lead">⚪ عميل جديد</option>
+                    <option value="Contacted">🔵 تم الاتصال</option>
+                    <option value="Follow Up Required">🟠 يحتاج متابعة</option>
+                    <option value="Appointment Booked">📅 تم حجز موعد</option>
+                    <option value="Proposal Sent">📄 تم إرسال العرض</option>
+                    <option value="Negotiating">🟡 تفاوض</option>
+                    <option value="In Progress">⚡ جاري العمل</option>
+                    <option value="Won">🟢 تم البيع</option>
+                    <option value="Lost">🔴 خسرنا الصفقة</option>
+                    <option value="Ghosted">⚫ لم يرد (اختفى)</option>
+                    <option value="Not Interested">❌ غير مهتم</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 5px; margin-bottom: 12px; direction: rtl; justify-content: flex-start;">
+                <input type="checkbox" id="lead-has-appointment" onchange="toggleAppointmentInputs(this.checked)" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                <label for="lead-has-appointment" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">📅 تحديد موعد حجز / متابعة للعميل</label>
+            </div>
+
+            <div class="form-group" id="appointment-time-group" style="display: none; gap: 8px; flex-direction: row; align-items: flex-end;">
+                <div style="flex: 1;">
+                    <label for="lead-appointment-day">اليوم</label>
+                    <select id="lead-appointment-day" style="text-align: right; direction: rtl;">
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                        <option value="7">7</option>
+                        <option value="8">8</option>
+                        <option value="9">9</option>
+                        <option value="10">10</option>
+                        <option value="11">11</option>
+                        <option value="12">12</option>
+                        <option value="13">13</option>
+                        <option value="14">14</option>
+                        <option value="15">15</option>
+                        <option value="16">16</option>
+                        <option value="17">17</option>
+                        <option value="18">18</option>
+                        <option value="19">19</option>
+                        <option value="20">20</option>
+                        <option value="21">21</option>
+                        <option value="22">22</option>
+                        <option value="23">23</option>
+                        <option value="24">24</option>
+                        <option value="25">25</option>
+                        <option value="26">26</option>
+                        <option value="27">27</option>
+                        <option value="28">28</option>
+                        <option value="29">29</option>
+                        <option value="30">30</option>
+                        <option value="31">31</option>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label for="lead-appointment-month">الشهر</label>
+                    <select id="lead-appointment-month" style="text-align: right; direction: rtl;">
+                        <option value="1">1 - يناير</option>
+                        <option value="2">2 - فبراير</option>
+                        <option value="3">3 - مارس</option>
+                        <option value="4">4 - إبريل</option>
+                        <option value="5">5 - مايو</option>
+                        <option value="6">6 - يونيو</option>
+                        <option value="7">7 - يوليو</option>
+                        <option value="8">8 - أغسطس</option>
+                        <option value="9">9 - سبتمبر</option>
+                        <option value="10">10 - أكتوبر</option>
+                        <option value="11">11 - نوفمبر</option>
+                        <option value="12">12 - ديسمبر</option>
+                    </select>
+                </div>
+                <div style="width: 120px;">
+                    <label for="lead-appointment-time-select">الوقت</label>
+                    <select id="lead-appointment-time-select" style="text-align: right; direction: rtl;">
+                        <option value="08:00">08:00 ص</option>
+                        <option value="08:30">08:30 ص</option>
+                        <option value="09:00">09:00 ص</option>
+                        <option value="09:30">09:30 ص</option>
+                        <option value="10:00">10:00 ص</option>
+                        <option value="10:30">10:30 ص</option>
+                        <option value="11:00">11:00 ص</option>
+                        <option value="11:30">11:30 ص</option>
+                        <option value="12:00">12:00 م</option>
+                        <option value="12:30">12:30 م</option>
+                        <option value="13:00">01:00 م</option>
+                        <option value="13:30">01:30 م</option>
+                        <option value="14:00">02:00 م</option>
+                        <option value="14:30">02:30 م</option>
+                        <option value="15:00">03:00 م</option>
+                        <option value="15:30">03:30 م</option>
+                        <option value="16:00">04:00 م</option>
+                        <option value="16:30">04:30 م</option>
+                        <option value="17:00">05:00 م</option>
+                        <option value="17:30">05:30 م</option>
+                        <option value="18:00">06:00 م</option>
+                        <option value="18:30">06:30 م</option>
+                        <option value="19:00">07:00 م</option>
+                        <option value="19:30">07:30 م</option>
+                        <option value="20:00">08:00 م</option>
+                        <option value="20:30">08:30 م</option>
+                        <option value="21:00">09:00 م</option>
+                        <option value="21:30">09:30 م</option>
+                        <option value="22:00">10:00 م</option>
+                        <option value="22:30">10:30 م</option>
+                        <option value="23:00">11:00 م</option>
+                        <option value="23:30">11:30 م</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="lead-notes" style="margin: 0;">📝 الملاحظات وسجل المتابعة</label>
+                    <button type="button" onclick="appendTimestampToNotes('lead-notes')" style="font-size: 0.75rem; color: #ffc107; background: none; border: none; cursor: pointer; padding: 0; font-weight: 700; font-family: var(--font-family);" title="إدراج تاريخ ووقت المكالمة تلقائياً">➕ إضافة طابع زمني</button>
+                </div>
+                <textarea id="lead-notes" rows="3" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none; text-align: right; resize: vertical;" placeholder="أضف ملاحظات المتابعة وتفاصيل العميل هنا..."></textarea>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeLeadModal()">إلغاء</button>
+                <button type="submit" class="btn">حفظ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+
+<!-- JS Core Logic -->
+<script>
+    const STATUS_BADGES = {
+        'New Lead': 'badge-newlead',
+        'Contacted': 'badge-contacted',
+        'Follow Up Required': 'badge-followuprequired',
+        'Appointment Booked': 'badge-appointmentbooked',
+        'Proposal Sent': 'badge-proposalsent',
+        'Negotiating': 'badge-negotiating',
+        'In Progress': 'badge-inprogress',
+        'Won': 'badge-won',
+        'Lost': 'badge-lost',
+        'Ghosted': 'badge-ghosted',
+        'Not Interested': 'badge-notinterested'
+    };
+
+    const STATUS_LABELS = {
+        'New Lead': '⚪ عميل جديد',
+        'Contacted': '🔵 تم الاتصال',
+        'Follow Up Required': '🟠 يحتاج متابعة',
+        'Appointment Booked': '📅 تم حجز موعد',
+        'Proposal Sent': '📄 تم إرسال العرض',
+        'Negotiating': '🟡 تفاوض',
+        'In Progress': '⚡ جاري العمل',
+        'Won': '🟢 تم البيع',
+        'Lost': '🔴 خسرنا الصفقة',
+        'Ghosted': '⚫ لم يرد (اختفى)',
+        'Not Interested': '❌ غير مهتم'
+    };
+
+    const DEFAULT_LEADS = [];
+
+    let leads = [];
+
+    // خريطة ألوان الحالات لتظليل جانب الكروت المدمجة في الشبكة
+    const STATUS_COLORS = {
+        'New Lead': '#f8f9fa',
+        'Contacted': '#007bff',
+        'Follow Up Required': '#fd7e14',
+        'Appointment Booked': '#6f42c1',
+        'Proposal Sent': '#e83e8c',
+        'Negotiating': '#ffc107',
+        'In Progress': '#17a2b8',
+        'Won': '#28a745',
+        'Lost': '#dc3545',
+        'Ghosted': '#6c757d',
+        'Not Interested': '#343a40'
+    };
+
+    let visibleLeadsLimit = 15; // تصفح تدريجي 15 بـ 15 لتجنب السكرول الطويل
+    let currentViewMode = localStorage.getItem('meta_crm_view_mode') || 'detailed'; // detailed أو compact
+
+    // رابط الويب الخاص بـ Google Apps Script للاتصال بالداتابيز مباشرة
+    const webAppUrl = "https://script.google.com/macros/s/AKfycbxohnDJLJI6JPjgUWZaBirJrRrORTdq2jCJDwgUrL53lqEUNpgy-hzx17MsFlzCKJuj/exec";
+
+    // كلمة السر المشتركة التي تحمي عمليات الكتابة — يجب أن تطابق قيمة API_SECRET
+    // المضبوطة في Script Properties داخل مشروع Google Apps Script.
+    // ⚠️ غيّرها لقيمة قوية خاصة بك قبل النشر.
+    const API_SECRET = "CHANGE_ME_TO_MATCH_SCRIPT_PROPERTY";
+
+    // التحقق مما إذا كان التطبيق يعمل داخل بيئة Google Apps Script
+    const isGoogleAppsScript = typeof google !== 'undefined' && google.script && google.script.run;
+
+    // دالة موحّدة لإرسال طلبات الكتابة للباك-إند مع تضمين كلمة السر تلقائياً
+    function postToBackend(payload) {
+        return fetch(webAppUrl, {
+            method: "POST",
+            body: JSON.stringify(Object.assign({ secret: API_SECRET }, payload))
+        }).then(res => res.json());
+    }
+
+    // دالة لتطهير النصوص ومنع ثغرات حقن الكود (XSS Protection)
+    function sanitize(str) {
+        const div = document.createElement('div');
+        div.innerText = String(str || "");
+        return div.innerHTML;
+    }
+
+    // دالة لتحويل الأرقام العربية الشرقية (٠-٩) إلى أرقام عربية قياسية (0-9) لمنع أخطاء الواتساب
+    function normalizePhone(str) {
+        const arabicNums = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
+        let result = String(str || "");
+        for (let i = 0; i < 10; i++) {
+            const regex = new RegExp(arabicNums[i], 'g');
+            result = result.replace(regex, i);
+        }
+        return result;
+    }
+
+    function updateDbStatus(statusClass, statusText) {
+        const dbStatusEl = document.getElementById('db-status');
+        const dbStatusTextEl = document.getElementById('db-status-text');
+        if (dbStatusEl && dbStatusTextEl) {
+            dbStatusEl.className = 'db-status ' + statusClass;
+            dbStatusTextEl.innerText = statusText;
+        }
+    }
+
+    // إظهار بنر التنبيه بوجود عملاء مسجلين أوفلاين لمزامنتهم
+    function checkOfflineLeadsAlert() {
+        const offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+        const syncBanner = document.getElementById('sync-warning-banner');
+        if (syncBanner) {
+            if (offlineLeads.length > 0) {
+                syncBanner.style.display = "block";
+                syncBanner.innerText = `⚠️ لديك عدد (${offlineLeads.length}) عملاء تم تسجيلهم أوفلاين. اضغط هنا لمزامنتهم مع شيت جوجل الآن.`;
+            } else {
+                syncBanner.style.display = "none";
+            }
+        }
+    }
+
+    // دالة مزامنة ورفع العملاء الذين تم تسجيلهم بدون إنترنت
+    function syncOfflineLeads() {
+        const offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+        if (offlineLeads.length === 0) return;
+
+        const syncBanner = document.getElementById('sync-warning-banner');
+        if (syncBanner) {
+            syncBanner.innerText = "⏳ جاري رفع ومزامنة العملاء مع شيت جوجل...";
+            syncBanner.style.pointerEvents = "none";
+        }
+
+        const promises = offlineLeads.map(lead => {
+            const leadToSave = { ...lead };
+            // إزالة المعرف التلقائي المؤقت لكي تصدره خوادم جوجل بشكل نظيف وسليم
+            if (leadToSave.id && leadToSave.id.startsWith("L-offline-")) {
+                delete leadToSave.id;
+            }
+            return postToBackend({
+                action: "addOrUpdate",
+                lead: leadToSave
+            });
+        });
+
+        Promise.all(promises)
+            .then(results => {
+                if (results.length > 0 && Array.isArray(results[results.length - 1])) {
+                    leads = results[results.length - 1];
+                }
+                localStorage.setItem('meta_crm_offline_leads', "[]");
+                if (syncBanner) {
+                    syncBanner.style.display = "none";
+                    syncBanner.style.pointerEvents = "auto";
+                }
+                alert("✅ تم رفع ومزامنة كافة العملاء الأوفلاين بنجاح مع شيت جوجل!");
+                calculateKPIs();
+                renderLeadsTable();
+            })
+            .catch(err => {
+                console.error("Failed to sync offline leads:", err);
+                if (syncBanner) {
+                    syncBanner.innerText = "🚨 فشل الرفع. اضغط هنا لإعادة المحاولة.";
+                    syncBanner.style.pointerEvents = "auto";
+                }
+            });
+    }
+
+    function initData() {
+        // تهيئة إعدادات ميتا الافتراضية محلياً لتفادي الكاش الفارغ
+        // ملاحظة: توكن Meta لم يعد يُخزَّن في المتصفح — أحداث CAPI تُرسَل عبر السيرفر
+        if (!localStorage.getItem('meta_pixel_id')) {
+            localStorage.setItem('meta_pixel_id', '1710050566782840');
+        }
+        if (localStorage.getItem('meta_capi_active') === null) {
+            localStorage.setItem('meta_capi_active', 'true');
+        }
+
+        loadSettingsFields(); // تعبئة حقول صفحة الإعدادات تلقائياً عند بدء التشغيل
+        loadCustomWhatsAppTemplates(); // تعبئة قوالب الواتساب المخصصة تلقائياً
+
+        // إخفاء عناصر الموبايل برمجياً على الديسكتوب للتأكيد وتفادي مشاكل كاش المتصفح القديم
+        if (window.innerWidth > 768) {
+            const nav = document.querySelector('.bottom-nav');
+            const sheet = document.getElementById('mobile-bottom-sheet');
+            if (nav) nav.style.setProperty('display', 'none', 'important');
+            if (sheet) sheet.style.setProperty('display', 'none', 'important');
+        }
+
+        updateDbStatus('status-connecting', 'جاري المزامنة في الخلفية...');
+
+        // 1. تحميل فوري وسريع من الذاكرة المحلية
+        if (localStorage.getItem('meta_crm_leads_minimal')) {
+            leads = JSON.parse(localStorage.getItem('meta_crm_leads_minimal'));
+            calculateKPIs();
+            renderLeadsTable();
+            checkUpcomingAppointments(); // تتبع المواعيد من الذاكرة المحلية فوراً
+        } else {
+            leads = DEFAULT_LEADS;
+            calculateKPIs();
+            renderLeadsTable();
+        }
+
+        if (isGoogleAppsScript) {
+            google.script.run.withSuccessHandler(function(data) {
+                updateDbStatus('status-connected', 'متصل بـ Google Sheets');
+                leads = Array.isArray(data) ? data : [];
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                calculateKPIs();
+                renderLeadsTable();
+                checkUpcomingAppointments();
+            }).getLeads();
+        } else {
+            // 2. فحص وتحديث البيانات في الخلفية مع مانع الكاش تلقائياً
+            fetch(webAppUrl + "?action=getLeads&_t=" + new Date().getTime())
+                .then(res => res.json())
+                .then(data => {
+                    const banner = document.getElementById('connection-error-banner');
+                    if (banner) banner.style.display = "none";
+                    
+                    updateDbStatus('status-connected', 'متصل بـ Google Sheets');
+                    
+                    leads = Array.isArray(data) ? data : [];
+                    localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                    
+                    calculateKPIs();
+                    renderLeadsTable();
+                    checkOfflineLeadsAlert();
+                    checkUpcomingAppointments(); // تتبع المواعيد الجديدة القادمة من شيت جوجل
+                })
+                .catch(err => {
+                    console.warn("تنبيه: فشل تحديث البيانات بالخلفية، سيتم الاستمرار بالوضع المحلي المتاح:", err);
+                    
+                    const banner = document.getElementById('connection-error-banner');
+                    if (banner) {
+                        banner.style.display = "block";
+                        banner.innerText = "🚨 فشل الاتصال بقاعدة البيانات. تفاصيل الخطأ: " + err.message;
+                    }
+                    
+                    updateDbStatus('status-error', 'غير متصل (يعمل بالذاكرة المؤقتة)');
+                    checkOfflineLeadsAlert();
+                });
+        }
+    }
+
+    function resetDefaultData() {
+        if (isGoogleAppsScript) {
+            alert("إعادة التعيين غير متاحة في بيئة شيت جوجل المباشرة.");
+        } else {
+            localStorage.removeItem('meta_crm_leads_minimal');
+            localStorage.setItem('meta_crm_offline_leads', '[]');
+            initData();
+            renderCharts();
+        }
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+        const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(btn => btn.getAttribute('onclick').includes(tabId));
+        if (activeBtn) activeBtn.classList.add('active');
+
+        document.getElementById(`${tabId}-tab`).classList.add('active');
+
+        if (tabId === 'charts') {
+            renderCharts();
+        }
+    }
+
+    function calculateKPIs() {
+        if (!Array.isArray(leads)) return;
+
+        populateMonthFilterDropdown();
+
+        const monthFilter = document.getElementById('month-filter') ? document.getElementById('month-filter').value : "";
+
+        // تصفية الصفوف لتجنب عد الأسطر الفارغة في شيت جوجل
+        let validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+
+        // تصفية حسب الشهر المختار
+        if (monthFilter) {
+            validLeads = validLeads.filter(l => getLeadMonthYearKey(l) === monthFilter);
+        }
+
+        const totalLeads = validLeads.length;
+        const won = validLeads.filter(l => String(l.status || "") === 'Won').length;
+        const active = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(String(l.status || ""))).length;
+
+        const target = 3;
+        const targetProgress = Math.min(100, Math.round((won / target) * 100));
+        const remaining = target - won;
+
+        let monthNameLabel = "كل الشهور";
+        if (monthFilter) {
+            const [y, m] = monthFilter.split('-');
+            monthNameLabel = `${ARABIC_MONTH_NAMES[m] || m} ${y}`;
+        }
+
+        const statusText = remaining > 0 ? `🎯 متبقي ${remaining} لتحقيق هدف ${monthNameLabel}` : `🎉 تم تحقيق هدف ${monthNameLabel} بنجاح!`;
+
+        const container = document.getElementById('kpi-grid');
+        if (container) {
+            container.innerHTML = `
+                <div class="kpi-card">
+                    <div class="kpi-label">إجمالي العملاء (${monthNameLabel})</div>
+                    <div class="kpi-value">${totalLeads}</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">تحت المتابعة النشطة</div>
+                    <div class="kpi-value">${active}</div>
+                </div>
+                <div class="kpi-card" style="position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; text-align: right; padding: 16px 20px;">
+                    <div>
+                        <div class="kpi-label" style="display: flex; justify-content: space-between; align-items: center;">
+                            <span>🏆 هدف الشهر (${monthNameLabel})</span>
+                            <span style="font-size: 0.75rem; color: #28a745; font-weight: 700;">${targetProgress}%</span>
+                        </div>
+                        <div class="kpi-value" style="font-size: 1.8rem; font-weight: 800; color: #28a745; margin-top: 4px;">
+                            ${won} <span style="font-size: 0.95rem; color: var(--text-secondary); font-weight: 600;">/ ${target} عملاء Done</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px;">
+                        <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; margin-bottom: 6px;">${statusText}</div>
+                        <div style="width: 100%; height: 5px; background-color: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden;">
+                            <div style="width: ${targetProgress}%; height: 100%; background-color: #28a745; border-radius: 3px; transition: width 0.6s ease-out; box-shadow: 0 0 10px rgba(40,167,69,0.5);"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        updateStatusFilterDropdown();
+        checkTodayAppointmentsBanner();
+    }
+
+    function updateStatusFilterDropdown() {
+        const filterSelect = document.getElementById('status-filter');
+        if (!filterSelect) return;
+
+        const currentValue = filterSelect.value;
+        const monthFilter = document.getElementById('month-filter') ? document.getElementById('month-filter').value : "";
+
+        // تصفية الأسطر الصالحة لحساب الأعداد بدقة
+        let validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+        if (monthFilter) {
+            validLeads = validLeads.filter(l => getLeadMonthYearKey(l) === monthFilter);
+        }
+        
+        // حساب إجمالي الحالات الفعالة (باستثناء غير مهتم واختفى)
+        const activeLeadsCount = validLeads.filter(l => l.status !== 'Not Interested' && l.status !== 'Ghosted').length;
+
+        // حساب عدد العملاء في كل حالة
+        const counts = {};
+        validLeads.forEach(l => {
+            const status = l.status || 'New Lead';
+            counts[status] = (counts[status] || 0) + 1;
+        });
+
+        // قائمة الحالات المعرفة في النظام بالترتيب والرموز التعبيرية والأسماء العربية
+        const ALL_STATUS_OPTIONS = [
+            { value: 'New Lead', label: 'عميل جديد', emoji: '⚪' },
+            { value: 'Contacted', label: 'تم الاتصال', emoji: '🔵' },
+            { value: 'Follow Up Required', label: 'يحتاج متابعة', emoji: '🟠' },
+            { value: 'Appointment Booked', label: 'تم حجز موعد', emoji: '📅' },
+            { value: 'Proposal Sent', label: 'تم إرسال العرض', emoji: '📄' },
+            { value: 'Negotiating', label: 'تفاوض', emoji: '🟡' },
+            { value: 'In Progress', label: 'جاري العمل', emoji: '⚡' },
+            { value: 'Won', label: 'تم البيع', emoji: '🟢' },
+            { value: 'Lost', label: 'خسرنا الصفقة', emoji: '🔴' },
+            { value: 'Ghosted', label: 'لم يرد (اختفى)', emoji: '⚫' },
+            { value: 'Not Interested', label: 'غير مهتم', emoji: '❌' }
+        ];
+
+        // بناء الخيارات ديناميكياً
+        let html = `<option value="">كل الحالات النشطة (${activeLeadsCount})</option>`;
+        
+        ALL_STATUS_OPTIONS.forEach(opt => {
+            const count = counts[opt.value] || 0;
+            if (count > 0) {
+                html += `<option value="${opt.value}">${opt.emoji} ${opt.label} (${count})</option>`;
+            }
+        });
+
+        filterSelect.innerHTML = html;
+
+        // استعادة القيمة المحددة سابقاً إذا كانت ما زالت موجودة في القائمة الجديدة
+        if (Array.from(filterSelect.options).some(opt => opt.value === currentValue)) {
+            filterSelect.value = currentValue;
+        } else {
+            filterSelect.value = "";
+        }
+    }
+
+    function renderLeadsTable() {
+        const query = document.getElementById('lead-search').value.toLowerCase();
+        const statusFilter = document.getElementById('status-filter').value;
+        const monthFilter = document.getElementById('month-filter') ? document.getElementById('month-filter').value : "";
+        const tbody = document.getElementById('leads-table-body');
+        const gridContainer = document.getElementById('grid-view-wrapper');
+        const tableViewWrapper = document.getElementById('table-view-wrapper');
+        const loadMoreContainer = document.getElementById('load-more-container');
+        
+        tbody.innerHTML = '';
+        if (gridContainer) gridContainer.innerHTML = '';
+        if (loadMoreContainer) loadMoreContainer.innerHTML = '';
+
+        if (!Array.isArray(leads)) {
+            console.error("Leads is not an array:", leads);
+            return;
+        }
+
+        // 1. تصفية العملاء بناءً على البحث الحالي والفلتر
+        const filteredLeads = [];
+        leads.forEach((l, index) => {
+            const fullnameStr = String(l.fullname || "").trim();
+            const phoneStr = String(l.phone || "").trim();
+            const statusStr = String(l.status || "").trim();
+            
+            if (fullnameStr === "" && phoneStr === "") return;
+            
+            // تصفية حسب الشهر المختار
+            if (monthFilter && getLeadMonthYearKey(l) !== monthFilter) return;
+            
+            const matchQuery = fullnameStr.toLowerCase().includes(query) || phoneStr.includes(query);
+            
+            let matchStatus = false;
+            if (currentChipFilter === 'today') {
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = ('0' + (now.getMonth() + 1)).slice(-2);
+                const day = ('0' + now.getDate()).slice(-2);
+                const todayStr = `${year}-${month}-${day}`;
+                const appt = String(l.appointment_time || "").trim();
+                matchStatus = appt.includes(todayStr) && statusStr !== 'Lost' && statusStr !== 'Not Interested';
+            } else {
+                matchStatus = statusFilter ? (statusStr === statusFilter) : (statusStr !== 'Not Interested' && statusStr !== 'Ghosted');
+            }
+            
+            if (matchQuery && matchStatus) {
+                // حفظ الفهرس الأصلي للعميل في مصفوفة leads لتعديل وحذف دقيقين
+                filteredLeads.push({ lead: l, originalIndex: index });
+            }
+        });
+
+        // 2. تحديث الحاوية الظاهرة بناءً على وضع العرض النشط
+        if (currentViewMode === 'compact') {
+            if (tableViewWrapper) tableViewWrapper.style.display = 'none';
+            if (gridContainer) gridContainer.style.display = 'grid';
+        } else {
+            if (tableViewWrapper) tableViewWrapper.style.display = 'block';
+            if (gridContainer) gridContainer.style.display = 'none';
+        }
+
+        // 3. عرض شريحة محددة من العملاء بناءً على visibleLeadsLimit
+        const leadsToRender = filteredLeads.slice(0, visibleLeadsLimit);
+
+        leadsToRender.forEach(item => {
+            const l = item.lead;
+            const index = item.originalIndex;
+            
+            const fullnameStr = String(l.fullname || "").trim();
+            const phoneStr = String(l.phone || "").trim();
+            const statusStr = String(l.status || "").trim();
+            let createdAtStr = String(l.created_at || "").trim();
+            if (!createdAtStr || createdAtStr.startsWith("1970") || createdAtStr === "0000-00-00") {
+                createdAtStr = "-";
+            }
+            
+            const phoneClean = phoneStr.replace(/[\+\s\-\(\)]/g, '');
+            const waUrl = `https://wa.me/${phoneClean}`;
+
+            const nowStr = new Date().toISOString().slice(0, 10);
+            const isHotLead = (statusStr === 'Appointment Booked' || statusStr === 'In Progress' || statusStr === 'Negotiating' || (l.appointment_time && String(l.appointment_time).includes(nowStr)));
+            const hotBadgeHtml = isHotLead ? '<span style="background: rgba(255, 87, 34, 0.15); color: #ff5722; border: 1px solid rgba(255, 87, 34, 0.3); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-right: 4px;" title="عميل عالي الأولوية">🔥 عالي الأولوية</span>' : '';
+
+            function formatAppointmentTimeArabic(apptStr) {
+                if (!apptStr) return "";
+                try {
+                    const cleanStr = apptStr.replace('T', ' ');
+                    const parts = cleanStr.split(' ');
+                    if (parts.length < 2) return apptStr;
+                    
+                    const dateParts = parts[0].split('-');
+                    const timeParts = parts[1].split(':');
+                    
+                    if (dateParts.length < 3 || timeParts.length < 2) return apptStr;
+                    
+                    const month = parseInt(dateParts[1]);
+                    const day = parseInt(dateParts[2]);
+                    
+                    let hour = parseInt(timeParts[0]);
+                    const minute = timeParts[1];
+                    
+                    const ampm = hour >= 12 ? 'م' : 'ص';
+                    hour = hour % 12;
+                    if (hour === 0) hour = 12;
+                    
+                    return `${day}/${month} (${hour}:${minute} ${ampm})`;
+                } catch(e) {
+                    return apptStr;
+                }
+            }
+
+            let statusLabel = STATUS_LABELS[statusStr] || statusStr;
+            let appointmentTimeDisplay = '-';
+            if (l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-") {
+                const formattedTime = formatAppointmentTimeArabic(l.appointment_time);
+                if (formattedTime) {
+                    appointmentTimeDisplay = formattedTime;
+                }
+            }
+
+            if (currentViewMode === 'compact') {
+                // ريندر كروت مدمجة للشبكة
+                if (gridContainer) {
+                    const isMobile = window.innerWidth <= 768;
+                    if (isMobile) {
+                        gridContainer.innerHTML += `
+                            <div class="mobile-lead-card" onclick="openLeadBottomSheet(${index})" style="border-right: 4px solid ${STATUS_COLORS[statusStr] || '#444'};">
+                                <div class="mobile-avatar" style="background-color: ${STATUS_COLORS[statusStr] + '22'}; color: ${STATUS_COLORS[statusStr]};">
+                                    ${fullnameStr.charAt(0) || 'ع'}
+                                </div>
+                                <div class="mobile-info">
+                                    <div class="mobile-name">${fullnameStr}</div>
+                                    <div class="mobile-sub">${phoneStr} • <span style="color: ${STATUS_COLORS[statusStr]}; font-weight: 700;">${statusLabel}</span></div>
+                                </div>
+                                <div class="mobile-action" onclick="event.stopPropagation();">
+                                    <a href="${waUrl}" target="_blank" class="mobile-wa-btn">💬</a>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        gridContainer.innerHTML += `
+                            <div class="compact-lead-card" style="border-top: 4px solid ${STATUS_COLORS[statusStr] || '#444'}; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+                                <div>
+                                    <div class="compact-header" style="display: flex; gap: 6px; align-items: center; margin-bottom: 8px;">
+                                        <input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()" style="width: 16px; height: 16px; margin: 0; flex-shrink: 0;">
+                                        <span class="compact-name" style="font-weight: 800; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-primary);" title="${fullnameStr}">${fullnameStr} ${hotBadgeHtml}</span>
+                                    </div>
+                                    
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 4px;">
+                                        <span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}" style="font-size: 0.65rem; padding: 2px 6px; white-space: nowrap;">${statusLabel}</span>
+                                        <span style="font-size: 0.75rem; color: var(--text-secondary); direction: ltr; font-weight: 600;">${phoneStr}</span>
+                                    </div>
+                                    
+                                    <div class="compact-details" style="font-size: 0.75rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 4px; border-top: 1px dashed rgba(255,255,255,0.05); padding-top: 6px;">
+                                        ${l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-" ? `<div style="color: #ffc107; font-weight: 700; font-size: 0.7rem; display: flex; align-items: center; gap: 4px;">📅 ${appointmentTimeDisplay}</div>` : ''}
+                                        <div style="font-size: 0.7rem; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes || ''}">📝 ${l.notes || '-'}</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="compact-actions" style="display: flex; gap: 6px; justify-content: space-between; align-items: center; margin-top: 12px; border-top: 1px solid var(--border-color); padding-top: 8px;">
+                                    <a href="${waUrl}" target="_blank" style="background-color: #25d366; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; text-decoration: none; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="واتساب">💬</a>
+                                    
+                                    <div style="position: relative; width: 28px; height: 28px;">
+                                        <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr.replace(/'/g, "\\'")}')" style="position: absolute; top:0; left:0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 2;">
+                                            <option value="">✍️</option>
+                                            <option value="welcome">🗣️ ترحيب</option>
+                                            <option value="followup">🕒 متابعة</option>
+                                            <option value="appointment">📅 موعد</option>
+                                            <option value="offer">📄 عرض</option>
+                                        </select>
+                                        <div style="width: 100%; height: 100%; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-card); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; z-index: 1;">✍️</div>
+                                    </div>
+                                    
+                                    <button class="btn-icon" onclick="openEditLeadModal(${index})" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border-color); background-color: var(--bg-card); color: var(--text-primary); display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; padding: 0;" title="تعديل">✏️</button>
+                                    <button class="btn-icon" onclick="deleteLead(${index})" style="width: 28px; height: 28px; border-radius: 50%; border: 1px solid rgba(220,53,69,0.2); background-color: rgba(220,53,69,0.05); color: #ff5252; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 0.75rem; padding: 0;" title="حذف">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            } else {
+                // ريندر صفوف جدول كاملة
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="select-col" data-label="تحديد" style="text-align: center; width: 40px;"><input type="checkbox" class="lead-select-checkbox" data-id="${l.id}" onchange="onLeadSelectChange()"></td>
+                        <td data-label="الاسم بالكامل" style="font-weight: 700; white-space: normal;">
+                            <div>${fullnameStr} ${hotBadgeHtml}</div>
+                            ${l.notes ? `<div style="font-weight: 500; font-size: 0.75rem; color: #a3a3a3; margin-top: 4px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${l.notes}">📝 ${l.notes}</div>` : ''}
+                        </td>
+                        <td data-label="رقم الهاتف" style="direction: ltr; text-align: right;">${phoneStr}</td>
+                        <td data-label="واتساب">
+                            <div style="display: flex; gap: 6px; align-items: center; justify-content: flex-end;">
+                                <a href="${waUrl}" target="_blank" class="wa-link">📱 مراسلة</a>
+                                <select onchange="sendWhatsAppTemplate(this, '${phoneClean}', '${fullnameStr.replace(/'/g, "\\'")}')" style="width: 32px; padding: 2px; font-size: 0.8rem; background-color: var(--bg-card); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; text-align: center; -webkit-appearance: none; -moz-appearance: none; appearance: none;" title="إرسال رسالة جاهزة">
+                                    <option value="">✍️</option>
+                                    <option value="welcome">🗣️ ترحيب</option>
+                                    <option value="followup">🕒 متابعة</option>
+                                    <option value="appointment">📅 موعد</option>
+                                    <option value="offer">📄 عرض</option>
+                                </select>
+                            </div>
+                        </td>
+                        <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span></td>
+                        <td data-label="ميعاد الحجز" style="font-weight: 700; color: #ffc107;">${appointmentTimeDisplay}</td>
+                        <td data-label="تاريخ الإضافة">${createdAtStr}</td>
+                        <td data-label="الإجراءات">
+                            <div class="action-row">
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" onclick="openEditLeadModal(${index})">تعديل الحالة</button>
+                                <button class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem; color: #ff5252; border-color: rgba(220,53,69,0.2);" onclick="deleteLead(${index})">حذف</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        });
+
+        // 4. عرض زر "تحميل المزيد" إذا كان هناك عملاء متبقين في التصفية
+        if (filteredLeads.length > visibleLeadsLimit) {
+            if (loadMoreContainer) {
+                loadMoreContainer.innerHTML = `
+                    <button class="btn btn-secondary" onclick="loadMoreLeads()" style="padding: 10px 24px; font-size: 0.9rem; margin-top: 15px; background-color: var(--bg-card); border-color: var(--border-color); display: inline-flex; align-items: center; gap: 8px; font-weight: 700;">
+                        👇 تحميل المزيد من العملاء (${filteredLeads.length - visibleLeadsLimit} متبقي)
+                    </button>
+                `;
+            }
+        }
+    }
+
+    function openNewLeadModal() {
+        document.getElementById('lead-modal-title').innerText = "إضافة عميل جديد";
+        document.getElementById('lead-form').reset();
+        document.getElementById('edit-lead-index').value = "";
+        document.getElementById('lead-notes').value = "";
+        
+        // إخفاء حقل الموعد وتحديد قيم اليوم الحالي تلقائياً
+        document.getElementById('lead-has-appointment').checked = false;
+        toggleAppointmentInputs(false);
+        const today = new Date();
+        document.getElementById('lead-appointment-month').value = String(today.getMonth() + 1);
+        document.getElementById('lead-appointment-day').value = String(today.getDate());
+        document.getElementById('lead-appointment-time-select').value = "12:00";
+        
+        document.getElementById('lead-modal').classList.add('active');
+    }
+
+    function openEditLeadModal(index) {
+        const l = leads[index];
+        document.getElementById('lead-modal-title').innerText = "تعديل حالة العميل";
+        document.getElementById('edit-lead-index').value = index;
+
+        document.getElementById('lead-fullname').value = l.fullname;
+        document.getElementById('lead-phone').value = l.phone;
+        document.getElementById('lead-status').value = l.status;
+
+        // التحقق من إظهار حقل الموعد وتوزيع البيانات على القوائم المنسدلة
+        const daySelect = document.getElementById('lead-appointment-day');
+        const monthSelect = document.getElementById('lead-appointment-month');
+        const timeSelect = document.getElementById('lead-appointment-time-select');
+        
+        if (l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-") {
+            document.getElementById('lead-has-appointment').checked = true;
+            toggleAppointmentInputs(true);
+            const parts = (l.appointment_time || '').split(' ');
+            const appDate = parts[0] || '';
+            const rawTime = parts[1] || '12:00';
+            
+            // تنظيف الوقت من الثواني (مثل 12:30:00 إلى 12:30) لتتطابق مع خيارات القائمة المنسدلة
+            const timeParts = rawTime.split(':');
+            const appTime = timeParts.slice(0, 2).join(':');
+            
+            const dateParts = appDate.split('-');
+            if (dateParts.length >= 3) {
+                monthSelect.value = String(parseInt(dateParts[1]));
+                daySelect.value = String(parseInt(dateParts[2]));
+            } else {
+                const today = new Date();
+                monthSelect.value = String(today.getMonth() + 1);
+                daySelect.value = String(today.getDate());
+            }
+            timeSelect.value = appTime;
+        } else {
+            document.getElementById('lead-has-appointment').checked = false;
+            toggleAppointmentInputs(false);
+            const today = new Date();
+            monthSelect.value = String(today.getMonth() + 1);
+            daySelect.value = String(today.getDate());
+            timeSelect.value = '12:00';
+        }
+
+        document.getElementById('lead-notes').value = l.notes || "";
+        document.getElementById('lead-modal').classList.add('active');
+    }
+
+    function closeLeadModal() {
+        document.getElementById('lead-modal').classList.remove('active');
+    }
+
+    function saveLead(e) {
+        e.preventDefault();
+        const indexStr = document.getElementById('edit-lead-index').value;
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "⏳ جاري الحفظ...";
+        }
+
+        const rawFullname = document.getElementById('lead-fullname').value;
+        const rawPhone = document.getElementById('lead-phone').value;
+        const cleanStatus = sanitize(document.getElementById('lead-status').value);
+        const rawAppDay = document.getElementById('lead-appointment-day').value;
+        const rawAppMonth = document.getElementById('lead-appointment-month').value;
+        const rawAppTime = document.getElementById('lead-appointment-time-select').value;
+        const cleanNotes = sanitize(document.getElementById('lead-notes').value);
+        
+        const cleanFullname = sanitize(rawFullname);
+        const cleanPhone = normalizePhone(rawPhone);
+        
+        const now = new Date();
+        let apptYear = now.getFullYear();
+        // لو الشهر المختار أقدم من الشهر الحالي، نفترض السنة القادمة (حجز مطلع العام الجديد)
+        if (parseInt(rawAppMonth) < (now.getMonth() + 1)) apptYear = apptYear + 1;
+        const formattedMonth = ('0' + rawAppMonth).slice(-2);
+        const formattedDay = ('0' + rawAppDay).slice(-2);
+        const hasAppt = document.getElementById('lead-has-appointment').checked;
+        const cleanAppTime = hasAppt ? `${apptYear}-${formattedMonth}-${formattedDay} ${rawAppTime}` : '';
+
+        const newLead = {
+            fullname: cleanFullname,
+            phone: cleanPhone,
+            status: cleanStatus,
+            appointment_time: cleanAppTime,
+            notes: cleanNotes
+        };
+
+        const isNewLead = (indexStr === "");
+        const isMetaPurchase = (cleanStatus === 'Won');
+        const isMetaSchedule = (cleanStatus === 'Appointment Booked' || (newLead.appointment_time && newLead.appointment_time.trim() !== ""));
+
+        if (isGoogleAppsScript) {
+            if (indexStr !== "") {
+                const idx = parseInt(indexStr);
+                newLead.id = leads[idx].id;
+            }
+            google.script.run.withSuccessHandler(function(updatedLeads) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "حفظ";
+                }
+                leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                calculateKPIs();
+                renderLeadsTable();
+                closeLeadModal();
+                checkUpcomingAppointments();
+                
+                if (isNewLead) sendMetaConversionsEvent(newLead, "Lead");
+                if (isMetaSchedule) sendMetaConversionsEvent(newLead, "Schedule");
+                if (isMetaPurchase) sendMetaConversionsEvent(newLead, "Purchase");
+            }).addOrUpdateLead(newLead);
+        } else {
+            if (indexStr !== "") {
+                const idx = parseInt(indexStr);
+                newLead.id = leads[idx].id;
+            }
+
+            postToBackend({
+                action: "addOrUpdate",
+                lead: newLead
+            })
+            .then(updatedLeads => {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "حفظ";
+                }
+                const oldLead = indexStr !== "" ? { ...leads[parseInt(indexStr)] } : null;
+                leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                calculateKPIs();
+                renderLeadsTable();
+                closeLeadModal();
+                checkUpcomingAppointments();
+                
+                sendTelegramNotification(indexStr === "" ? "add" : "update", newLead, oldLead);
+                
+                if (isNewLead) sendMetaConversionsEvent(newLead, "Lead");
+                if (isMetaSchedule) sendMetaConversionsEvent(newLead, "Schedule");
+                if (isMetaPurchase) sendMetaConversionsEvent(newLead, "Purchase");
+            })
+            .catch(err => {
+                console.warn("تنبيه: فشل إرسال البيانات للـ API، سيتم الحفظ محلياً:", err);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "حفظ";
+                }
+                
+                let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+                const oldLead = indexStr !== "" ? { ...leads[parseInt(indexStr)] } : null;
+                
+                if (indexStr === "") {
+                    newLead.id = "L-offline-" + new Date().getTime() + "-" + Math.floor(Math.random() * 1000);
+                    newLead.created_at = new Date().toISOString().split('T')[0];
+                    leads.push(newLead);
+                    offlineLeads.push(newLead);
+                } else {
+                    const idx = parseInt(indexStr);
+                    newLead.id = leads[idx].id;
+                    leads[idx] = { ...leads[idx], ...newLead };
+                    
+                    const oIdx = offlineLeads.findIndex(ol => ol.id === newLead.id);
+                    if (oIdx !== -1) {
+                        offlineLeads[oIdx] = { ...offlineLeads[oIdx], ...newLead };
+                    } else {
+                        offlineLeads.push(newLead);
+                    }
+                }
+                
+                localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                localStorage.setItem('meta_crm_offline_leads', JSON.stringify(offlineLeads));
+                
+                calculateKPIs();
+                renderLeadsTable();
+                closeLeadModal();
+                checkOfflineLeadsAlert();
+                checkUpcomingAppointments();
+                
+                sendTelegramNotification(indexStr === "" ? "add" : "update", newLead, oldLead);
+                
+                if (isNewLead) sendMetaConversionsEvent(newLead, "Lead");
+                if (isMetaSchedule) sendMetaConversionsEvent(newLead, "Schedule");
+                if (isMetaPurchase) sendMetaConversionsEvent(newLead, "Purchase");
+            });
+        }
+    }
+
+    function deleteLead(index) {
+        if (confirm("هل أنت متأكد من حذف هذا العميل؟")) {
+            const tbody = document.getElementById('leads-table-body');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري معالجة حذف العميل من شيت جوجل...</td></tr>';
+            }
+
+            const targetLead = { ...leads[index] };
+            const targetLeadId = targetLead.id;
+
+            if (isGoogleAppsScript) {
+                google.script.run.withSuccessHandler(function(updatedLeads) {
+                    leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                    calculateKPIs();
+                    renderLeadsTable();
+                    
+                    // إرسال إشعار تلجرام
+                    sendTelegramNotification("delete", targetLead);
+                }).deleteLead(targetLeadId);
+            } else {
+                postToBackend({
+                    action: "delete",
+                    leadId: targetLeadId
+                })
+                .then(updatedLeads => {
+                    leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                    calculateKPIs();
+                    renderLeadsTable();
+
+                    // إرسال إشعار تلجرام
+                    sendTelegramNotification("delete", targetLead);
+                })
+                .catch(err => {
+                    console.warn("تنبيه: فشل الحذف عبر الـ API، سيتم الحذف محلياً:", err);
+                    
+                    leads.splice(index, 1);
+                    localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                    
+                    let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+                    offlineLeads = offlineLeads.filter(ol => ol.id !== targetLeadId);
+                    localStorage.setItem('meta_crm_offline_leads', JSON.stringify(offlineLeads));
+                    
+                    calculateKPIs();
+                    renderLeadsTable();
+                    checkOfflineLeadsAlert();
+                    
+                    // إرسال إشعار تلجرام
+                    sendTelegramNotification("delete", targetLead);
+                });
+            }
+        }
+    }
+
+    // دالة بناء نص إشعار تلجرام وإرساله عبر بروكسي السيرفر (التوكن لا يظهر في المتصفح)
+    function sendTelegramNotification(type, lead, oldLead = null) {
+        let text = "";
+        
+        function getArabicStatus(status) {
+            const mapping = {
+                "New Lead": "⚪ عميل جديد",
+                "Contacted": "🔵 تم الاتصال",
+                "Follow Up Required": "🟠 يحتاج متابعة",
+                "Appointment Booked": "📅 تم حجز موعد",
+                "Proposal Sent": "📄 تم إرسال العرض",
+                "Negotiating": "🟡 تفاوض",
+                "In Progress": "⚡ جاري العمل",
+                "Won": "🟢 تم البيع بنجاح (Won)",
+                "Lost": "🔴 صفقة خاسرة (Lost)",
+                "Ghosted": "⚫ لم يرد / اختفى (Ghosted)",
+                "Not Interested": "❌ غير مهتم"
+            };
+            return mapping[status] || status;
+        }
+
+        function formatTimeArabic(timeStr) {
+            if (!timeStr) return "";
+            try {
+                const parts = timeStr.replace('T', ' ').split(' ');
+                if (parts.length >= 2) {
+                    const dateParts = parts[0].split('-');
+                    const timeParts = parts[1].split(':');
+                    if (dateParts.length >= 3 && timeParts.length >= 2) {
+                        let hour = parseInt(timeParts[0]);
+                        const minute = timeParts[1];
+                        const ampm = hour >= 12 ? 'م' : 'ص';
+                        hour = hour % 12;
+                        if (hour === 0) hour = 12;
+                        return `${parseInt(dateParts[2])}/${parseInt(dateParts[1])} (${hour}:${minute} ${ampm})`;
+                    }
+                }
+                return timeStr;
+            } catch(e) {
+                return timeStr;
+            }
+        }
+
+        if (type === 'add') {
+            text = `➕ <b>إضافة عميل جديد!</b>\n\n` +
+                   `👤 <b>الاسم:</b> ${lead.fullname}\n` +
+                   `📞 <b>الهاتف:</b> ${lead.phone}\n` +
+                   `⚡ <b>الحالة:</b> ${getArabicStatus(lead.status)}\n` +
+                   (lead.appointment_time ? `📅 <b>الموعد:</b> ${formatTimeArabic(lead.appointment_time)}` : "");
+        } else if (type === 'update') {
+            const oldStatusText = oldLead ? getArabicStatus(oldLead.status) : "غير معروف";
+            text = `🔄 <b>تحديث حالة عميل!</b>\n\n` +
+                   `👤 <b>الاسم:</b> ${lead.fullname}\n` +
+                   `📞 <b>الهاتف:</b> ${lead.phone}\n` +
+                   `❌ <b>الحالة السابقة:</b> ${oldStatusText}\n` +
+                   `✅ <b>الحالة الجديدة:</b> ${getArabicStatus(lead.status)}\n` +
+                   (lead.appointment_time ? `📅 <b>الموعد:</b> ${formatTimeArabic(lead.appointment_time)}` : "");
+        } else if (type === 'delete') {
+            text = `🗑️ <b>حذف عميل!</b>\n\n` +
+                   `👤 <b>الاسم:</b> ${lead.fullname}\n` +
+                   `📞 <b>الهاتف:</b> ${lead.phone}`;
+        }
+
+        if (!text) return;
+        sendTelegramNotificationRaw(text);
+    }
+
+    function renderCharts() {
+        // 1. حساب وتحديث مؤشرات اللوحة العلوية العائمة
+        const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+        const totalCount = validLeads.length;
+        
+        const wonCount = validLeads.filter(l => l.status === 'Won').length;
+        const activeCount = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(l.status)).length;
+        
+        const conversionRate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
+        
+        const convRateEl = document.getElementById('v-conversion-rate');
+        const convProgEl = document.getElementById('v-conversion-progress');
+        if (convRateEl && convProgEl) {
+            convRateEl.innerText = conversionRate + '%';
+            convProgEl.style.width = conversionRate + '%';
+            
+            // تغيير لون المؤشر حسب قوة النسبة لمزيد من الراحة البصرية
+            if (conversionRate >= 45) {
+                convRateEl.style.color = '#28a745';
+                convProgEl.style.backgroundColor = '#28a745';
+                convProgEl.style.boxShadow = '0 0 10px rgba(40,167,105,0.5)';
+            } else if (conversionRate >= 20) {
+                convRateEl.style.color = '#ffc107';
+                convProgEl.style.backgroundColor = '#ffc107';
+                convProgEl.style.boxShadow = '0 0 10px rgba(255,193,7,0.5)';
+            } else {
+                convRateEl.style.color = '#dc3545';
+                convProgEl.style.backgroundColor = '#dc3545';
+                convProgEl.style.boxShadow = '0 0 10px rgba(220,53,69,0.5)';
+            }
+        }
+        
+        const wonCountEl = document.getElementById('v-won-count');
+        const wonProgEl = document.getElementById('v-won-progress');
+        if (wonCountEl && wonProgEl) {
+            wonCountEl.innerText = wonCount;
+            const wonPct = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
+            wonProgEl.style.width = wonPct + '%';
+        }
+        
+        const activeCountEl = document.getElementById('v-active-count');
+        const activeProgEl = document.getElementById('v-active-progress');
+        if (activeCountEl && activeProgEl) {
+            activeCountEl.innerText = activeCount;
+            const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
+            activeProgEl.style.width = activePct + '%';
+        }
+
+        // 2. تعبئة قمع مراحل البيع البصري (Visual Pipeline Bars)
+        const pipelineStages = [
+            { key: 'New Lead', label: '⚪ عميل جديد', color: '#f8f9fa' },
+            { key: 'Contacted', label: '🔵 تم الاتصال', color: '#007bff' },
+            { key: 'Follow Up Required', label: '🟠 يحتاج متابعة', color: '#fd7e14' },
+            { key: 'Appointment Booked', label: '📅 تم حجز موعد', color: '#6f42c1' },
+            { key: 'Proposal Sent', label: '📄 تم إرسال العرض', color: '#e83e8c' },
+            { key: 'Negotiating', label: '🟡 تفاوض', color: '#ffc107' },
+            { key: 'In Progress', label: '⚡ جاري العمل', color: '#17a2b8' },
+            { key: 'Won', label: '🟢 تم البيع بنجاح (Won)', color: '#28a745' }
+        ];
+
+        const pipelineContainer = document.getElementById('visual-pipeline-bars-container');
+        if (pipelineContainer) {
+            pipelineContainer.innerHTML = '';
+            pipelineStages.forEach(stage => {
+                const count = validLeads.filter(l => l.status === stage.key).length;
+                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+                
+                pipelineContainer.innerHTML += `
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700;">
+                            <span style="color: ${stage.color};">${stage.label}</span>
+                            <span style="color: var(--text-secondary);">${count} عملاء (${pct}%)</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background-color: ${stage.color}; box-shadow: 0 0 6px ${stage.color}; border-radius: 4px; transition: width 0.6s ease-out;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 3. تعبئة نتائج الاتصال النهائية (Visual Outcomes)
+        const outcomeStages = [
+            { key: 'Won', label: '🟢 صفقات ناجحة (Won)', color: '#28a745' },
+            { key: 'Lost', label: '🔴 صفقات خاسرة (Lost)', color: '#dc3545' },
+            { key: 'Ghosted', label: '⚫ لم يرد / اختفى (Ghosted)', color: '#6c757d' },
+            { key: 'Not Interested', label: '❌ غير مهتم (Not Interested)', color: '#343a40' }
+        ];
+
+        const outcomesContainer = document.getElementById('visual-outcomes-container');
+        if (outcomesContainer) {
+            outcomesContainer.innerHTML = '';
+            outcomeStages.forEach(stage => {
+                const count = validLeads.filter(l => l.status === stage.key).length;
+                const pct = totalCount > 0 ? Math.round((count / totalCount) * 100) : 0;
+
+                outcomesContainer.innerHTML += `
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.85rem; font-weight: 700;">
+                            <span style="color: ${stage.color === '#ffffff' ? '#fff' : stage.color};">${stage.label}</span>
+                            <span style="color: var(--text-secondary);">${count} صفقات (${pct}%)</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background-color: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 4px; overflow: hidden;">
+                            <div style="width: ${pct}%; height: 100%; background-color: ${stage.color}; border-radius: 4px; transition: width 0.6s ease-out;"></div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+    }
+
+    let deferredPrompt;
+
+    window.onload = function() {
+        initData();
+        updateViewModeUI();
+        
+        // إلغاء تسجيل الـ Service Worker وحذف الكاش تماماً لضمان عدم حدوث تعليق أو حلقات تحديث مفرطة
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for (let registration of registrations) {
+                    registration.unregister().then(function() {
+                        console.log('Service Worker unregistered successfully!');
+                    });
+                }
+            });
+        }
+        
+        // تفريغ الكاش بالكامل للتأكد من الاتصال المباشر بجوجل شيت
+        if ('caches' in window) {
+            caches.keys().then(function(names) {
+                for (let name of names) {
+                    caches.delete(name);
+                }
+            });
+        }
+
+        // مستمع تغيير الحالة لتفعيل حقل الموعد تلقائياً للتسهيل
+        const statusEl = document.getElementById('lead-status');
+        if (statusEl) {
+            statusEl.addEventListener('change', function(e) {
+                if (e.target.value === 'Appointment Booked') {
+                    const chk = document.getElementById('lead-has-appointment');
+                    if (chk) {
+                        chk.checked = true;
+                        toggleAppointmentInputs(true);
+                    }
+                }
+            });
+        }
+    };
+
+    // مستمع لتثبيت التطبيق للأندرويد ومتصفح كروم
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const installBtn = document.getElementById('install-pwa-btn');
+        if (installBtn) installBtn.style.display = 'inline-flex';
+    });
+
+    function installPWA() {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+                console.log('User accepted the PWA install prompt');
+            }
+            deferredPrompt = null;
+            const installBtn = document.getElementById('install-pwa-btn');
+            if (installBtn) installBtn.style.display = 'none';
+        });
+    }
+
+    // دالة للتحقق من المواعيد القريبة وإصدار التنبيهات مع حماية كاملة من الأعطال
+    function checkUpcomingAppointments() {
+        if (!Array.isArray(leads)) return;
+
+        // طلب صلاحية الإشعارات من المتصفح إذا لم تحدد بعد
+        if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        const now = new Date();
+
+        leads.forEach(l => {
+            if (l.status === 'Appointment Booked' && l.appointment_time) {
+                try {
+                    const cleanAppTime = l.appointment_time.replace('T', ' ');
+                    const parts = cleanAppTime.split(' ');
+                    if (parts.length >= 2) {
+                        const dateParts = parts[0].split('-');
+                        const timeParts = parts[1].split(':');
+                        
+                        if (dateParts.length >= 3 && timeParts.length >= 2) {
+                            const year = parseInt(dateParts[0]);
+                            const month = parseInt(dateParts[1]) - 1; // 0-indexed
+                            const day = parseInt(dateParts[2]);
+                            const hour = parseInt(timeParts[0]);
+                            const minute = parseInt(timeParts[1]);
+                            
+                            const apptDate = new Date(year, month, day, hour, minute);
+                            if (!isNaN(apptDate.getTime())) {
+                                // مقارنة التواريخ والوقت بأمان
+                                if (apptDate.getFullYear() === now.getFullYear() &&
+                                    apptDate.getMonth() === now.getMonth() &&
+                                    apptDate.getDate() === now.getDate()) {
+                                    
+                                    const diffMs = apptDate - now;
+                                    const diffMins = Math.round(diffMs / 60000);
+                                    
+                                    // إرسال تنبيه إذا كان الموعد اليوم وفي حدود ساعة قادمة أو مضى عليه 30 دقيقة
+                                    if (diffMins >= -30 && diffMins <= 60) {
+                                        showAppointmentReminder(l, diffMins);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } catch(e) {
+                    console.warn("فشل فحص موعد العميل:", l, e);
+                }
+            }
+        });
+    }
+
+    // دالة لعرض التنبيه كإشعار نظامي عائم في زاوية الشاشة
+    function showAppointmentReminder(lead, diffMins) {
+        let timeStr = "";
+        try {
+            const parts = lead.appointment_time.replace('T', ' ').split(' ');
+            if (parts.length >= 2) {
+                const timeParts = parts[1].split(':');
+                if (timeParts.length >= 2) {
+                    let hour = parseInt(timeParts[0]);
+                    const minute = timeParts[1];
+                    const ampm = hour >= 12 ? 'م' : 'ص';
+                    hour = hour % 12;
+                    if (hour === 0) hour = 12;
+                    timeStr = `${hour}:${minute} ${ampm}`;
+                }
+            }
+        } catch(e) {
+            timeStr = lead.appointment_time;
+        }
+        if (!timeStr) timeStr = lead.appointment_time;
+
+        const title = `📅 تذكير بموعد عميل اليوم`;
+        let message = "";
+
+        if (diffMins < 0) {
+            message = `بدأ موعد العميل ${lead.fullname} منذ ${Math.abs(diffMins)} دقيقة (الساعة ${timeStr}).`;
+        } else if (diffMins === 0) {
+            message = `حان الآن موعد العميل ${lead.fullname} (الساعة ${timeStr})!`;
+        } else {
+            message = `لديك موعد بعد ${diffMins} دقيقة مع العميل ${lead.fullname} (الساعة ${timeStr}).`;
+        }
+
+        // 1. إظهار إشعار النظام (Push Notification) إذا كانت الصلاحية ممنوحة
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            new Notification(title, {
+                body: message,
+                icon: 'icon-192.png'
+            });
+        }
+
+        // 2. إظهار بنر عائم داخل واجهة النظام لضمان لفت انتباه المستخدم
+        const reminderContainer = document.getElementById('reminder-container') || createReminderContainer();
+        const alertId = `reminder-${lead.id}-${Math.floor(Math.random() * 1000)}`;
+        if (!document.getElementById(alertId)) {
+            const alertEl = document.createElement('div');
+            alertEl.id = alertId;
+            alertEl.style = "background-color: #121212; border: 1px solid #ffc107; border-radius: 8px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 12px rgba(0,0,0,0.5); border-right: 4px solid #ffc107; animation: slide-in 0.3s ease-out;";
+            alertEl.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.5rem;">📅</span>
+                    <div>
+                        <strong style="color: #ffc107; font-size: 0.95rem; font-family: 'Cairo'; display: block;">${title}</strong>
+                        <span style="color: #ffffff; font-size: 0.85rem; font-family: 'Cairo';">${message}</span>
+                    </div>
+                </div>
+                <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #a3a3a3; cursor: pointer; font-size: 1.2rem; font-weight: bold; font-family: 'Cairo'; padding: 4px 8px; margin-right: 12px;">✕</button>
+            `;
+            reminderContainer.appendChild(alertEl);
+        }
+    }
+
+    function createReminderContainer() {
+        const el = document.createElement('div');
+        el.id = 'reminder-container';
+        el.style = "position: fixed; bottom: 20px; right: 20px; z-index: 1100; max-width: 350px; width: calc(100% - 40px);";
+        document.body.appendChild(el);
+        
+        // إضافة أنيميشن للظهور للبنر العائم
+        const style = document.createElement('style');
+        style.innerHTML = `
+            @keyframes slide-in {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+        return el;
+    }
+
+    // ==================== وظائف التحكم بالدُفعات (Bulk Operations) والتقارير ====================
+
+    // تحديد / إلغاء تحديد كافة العملاء
+    function toggleSelectAllLeads(masterCheckbox) {
+        const checkboxes = document.querySelectorAll('.lead-select-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = masterCheckbox.checked;
+        });
+        onLeadSelectChange();
+    }
+
+    // تتبع التغير في تحديد العملاء لتحديث الدوك العائم وزر الحذف
+    function onLeadSelectChange() {
+        const all = document.querySelectorAll('.lead-select-checkbox');
+        const checked = document.querySelectorAll('.lead-select-checkbox:checked');
+        const bulkDeleteBtn = document.getElementById('bulk-delete-btn');
+        if (bulkDeleteBtn) {
+            if (checked.length > 0) {
+                bulkDeleteBtn.style.display = 'inline-flex';
+                bulkDeleteBtn.innerText = `🗑️ حذف المحدد (${checked.length})`;
+            } else {
+                bulkDeleteBtn.style.display = 'none';
+            }
+        }
+        const selectAll = document.getElementById('select-all-checkbox');
+        if (selectAll) selectAll.checked = all.length > 0 && checked.length === all.length;
+        updateBulkDock(checked.length);
+    }
+
+    // حذف العملاء المحددين دفعة واحدة
+    function deleteSelectedLeads() {
+        const checked = document.querySelectorAll('.lead-select-checkbox:checked');
+        if (checked.length === 0) return;
+        
+        if (confirm(`هل أنت متأكد من حذف ${checked.length} عميل محدد نهائياً؟`)) {
+            const leadIds = Array.from(checked).map(cb => cb.getAttribute('data-id'));
+            
+            const tbody = document.getElementById('leads-table-body');
+            if (tbody) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-secondary); padding: 30px;">⏳ جاري حذف العملاء المحددين من شيت جوجل...</td></tr>`;
+            }
+
+            // تجميع معلومات العملاء الذين سيتم حذفهم لإرسالهم للتلجرام
+            const deletedLeads = leads.filter(l => leadIds.indexOf(l.id) !== -1);
+            
+            if (isGoogleAppsScript) {
+                google.script.run.withSuccessHandler(function(updatedLeads) {
+                    leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                    calculateKPIs();
+                    renderLeadsTable();
+                    onLeadSelectChange();
+                    document.getElementById('select-all-checkbox').checked = false;
+                    
+                    // إرسال الإشعار للتلجرام
+                    sendBulkDeleteTelegramNotification(deletedLeads);
+                }).deleteLeadsBulk(leadIds);
+            } else {
+                postToBackend({
+                    action: "deleteBulk",
+                    leadIds: leadIds
+                })
+                .then(updatedLeads => {
+                    leads = Array.isArray(updatedLeads) ? updatedLeads : [];
+                    calculateKPIs();
+                    renderLeadsTable();
+                    onLeadSelectChange();
+                    document.getElementById('select-all-checkbox').checked = false;
+
+                    // إرسال الإشعار للتلجرام
+                    sendBulkDeleteTelegramNotification(deletedLeads);
+                })
+                .catch(err => {
+                    console.warn("فشل حذف الكمية عبر السيرفر، يتم الحذف محلياً:", err);
+                    
+                    // الحذف محلياً
+                    leads = leads.filter(l => leadIds.indexOf(l.id) === -1);
+                    localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                    
+                    let offlineLeads = JSON.parse(localStorage.getItem('meta_crm_offline_leads') || "[]");
+                    offlineLeads = offlineLeads.filter(ol => leadIds.indexOf(ol.id) === -1);
+                    localStorage.setItem('meta_crm_offline_leads', JSON.stringify(offlineLeads));
+                    
+                    calculateKPIs();
+                    renderLeadsTable();
+                    onLeadSelectChange();
+                    document.getElementById('select-all-checkbox').checked = false;
+                    
+                    // إرسال الإشعار للتلجرام
+                    sendBulkDeleteTelegramNotification(deletedLeads);
+                });
+            }
+        }
+    }
+    
+    // إرسال إشعار حذف جماعي للتلجرام
+    function sendBulkDeleteTelegramNotification(deletedLeads) {
+        const namesList = deletedLeads.map(l => `• ${l.fullname} (${l.phone})`).join('\n');
+        const text = `🗑️ <b>حذف مجموعة عملاء دفعة واحدة (Bulk Delete)!</b>\n\n` +
+                     `👥 <b>عدد العملاء المحذوفين:</b> ${deletedLeads.length}\n\n` +
+                     `📋 <b>قائمة المحذوفين:</b>\n${namesList}`;
+                     
+        sendTelegramNotificationRaw(text);
+    }
+
+
+    // إرسال تقرير إحصائي كامل يدوياً للتلجرام
+    function sendManualTelegramReport() {
+        const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+        const totalCount = validLeads.length;
+        
+        const wonCount = validLeads.filter(l => l.status === 'Won').length;
+        const activeCount = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(l.status)).length;
+        const conversionRate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
+        
+        const statusMap = {
+            'New Lead': 0, 'Contacted': 0, 'Follow Up Required': 0,
+            'Appointment Booked': 0, 'Proposal Sent': 0, 'Negotiating': 0,
+            'In Progress': 0,
+            'Won': 0, 'Lost': 0, 'Ghosted': 0, 'Not Interested': 0
+        };
+        validLeads.forEach(l => {
+            if (l.status in statusMap) statusMap[l.status]++;
+        });
+        
+        const text = `📊 <b>تقرير حالة نظام ليد فلو الحالي</b>\n\n` +
+                     `🗂️ <b>إجمالي عملاء النظام:</b> ${totalCount} عميل\n` +
+                     `🟢 <b>الصفقات المغلقة الناجحة (Won):</b> ${wonCount}\n` +
+                     `⚡ <b>عملاء قيد العمل والاتصال:</b> ${activeCount}\n` +
+                     `🎯 <b>معدل تحويل المبيعات العام:</b> ${conversionRate}%\n\n` +
+                     `📈 <b>توزيع الحالات بالتفصيل:</b>\n` +
+                     `  • ⚪ عميل جديد: ${statusMap['New Lead']}\n` +
+                     `  • 🔵 تم الاتصال: ${statusMap['Contacted']}\n` +
+                     `  • 🟠 يحتاج متابعة: ${statusMap['Follow Up Required']}\n` +
+                     `  • 📅 تم حجز موعد: ${statusMap['Appointment Booked']}\n` +
+                     `  • 📄 تم إرسال العرض: ${statusMap['Proposal Sent']}\n` +
+                     `  • 🟡 تفاوض: ${statusMap['Negotiating']}\n` +
+                     `  • ⚡ جاري العمل: ${statusMap['In Progress']}\n` +
+                     `  • 🟢 تم البيع: ${statusMap['Won']}\n` +
+                     `  • 🔴 خسرنا الصفقة: ${statusMap['Lost']}\n` +
+                     `  • ⚫ لم يرد (اختفى): ${statusMap['Ghosted']}\n` +
+                     `  • ❌ غير مهتم: ${statusMap['Not Interested']}\n\n` +
+                     `✨ تم توليد التقرير يدوياً بطلب من لوحة التحكم.`;
+                     
+        sendTelegramNotificationRaw(text);
+        alert("✅ تم إرسال تقرير إحصائي كامل إلى التليجرام بنجاح!");
+    }
+    
+    // دالة مساعدة عامة لإرسال نص خام إلى التلجرام عبر بروكسي السيرفر
+    function sendTelegramNotificationRaw(text) {
+        if (!text) return;
+        if (isGoogleAppsScript) {
+            google.script.run.sendTelegramText(text);
+        } else {
+            postToBackend({ action: "telegram", text: text })
+                .catch(err => console.warn("فشل إرسال إشعار تلجرام عبر السيرفر:", err));
+        }
+    }
+
+    // دالة إرسال قوالب رسائل الواتساب الجاهزة لتوفير الوقت وسرعة المتابعة
+    function sendWhatsAppTemplate(selectEl, phone, fullname, appointmentTime) {
+        const val = selectEl.value;
+        if (!val) return;
+        
+        sendWhatsAppTemplateDirectly(val, phone, fullname, appointmentTime);
+        
+        // إعادة القائمة للخيار الافتراضي فارغ
+        selectEl.value = "";
+    }
+
+    // زيادة الحد الأقصى للعملاء الظاهرين وإعادة الريندر
+    function loadMoreLeads() {
+        visibleLeadsLimit += 15;
+        renderLeadsTable();
+    }
+
+    // إعادة تعيين الحد الأقصى للريندر عند تغيير فلاتر البحث أو الحالة
+    function resetLimitAndRender() {
+        visibleLeadsLimit = 15;
+        renderLeadsTable();
+    }
+
+    // تغيير فلتر الحالة من القائمة المنسدلة يلغي شيبة الفلترة السريعة لتفادي التعارض
+    function onStatusFilterChange() {
+        currentChipFilter = 'all';
+        document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
+        const allChip = document.querySelector('.chip-btn');
+        if (allChip) allChip.classList.add('active');
+        resetLimitAndRender();
+    }
+
+    // التبديل بين وضع القائمة المفصلة وكروت الشبكة المدمجة
+    function toggleViewMode() {
+        currentViewMode = currentViewMode === 'detailed' ? 'compact' : 'detailed';
+        localStorage.setItem('meta_crm_view_mode', currentViewMode);
+        updateViewModeUI();
+        renderLeadsTable();
+    }
+
+    // تحديث شكل ونص زر التبديل بناءً على الوضع المفعّل
+    function updateViewModeUI() {
+        const toggleBtn = document.getElementById('view-mode-toggle-btn');
+        if (toggleBtn) {
+            if (currentViewMode === 'compact') {
+                toggleBtn.innerHTML = '📋 عرض القائمة';
+            } else {
+                toggleBtn.innerHTML = '🗂️ عرض الشبكة';
+            }
+        }
+    }
+
+    // ==================== وظائف التحكم بلوحة الإعدادات والربط مع ميتا (Meta CAPI) ====================
+
+    function openSettingsModal() {
+        // قراءة وتعبئة إعدادات ميتا المخزنة محلياً في متصفح المستخدم (الافتراضي هو البكسل والتوكن الخاصين بك)
+        document.getElementById('meta-pixel-id').value = localStorage.getItem('meta_pixel_id') || '1710050566782840';
+        document.getElementById('meta-access-token').value = localStorage.getItem('meta_access_token') || '';
+        document.getElementById('meta-capi-active').checked = localStorage.getItem('meta_capi_active') !== 'false';
+        
+        document.getElementById('settings-modal').classList.add('active');
+    }
+
+    function closeSettingsModal() {
+        document.getElementById('settings-modal').classList.remove('active');
+    }
+
+    function saveSettings(e) {
+        e.preventDefault();
+        
+        const pixelId = document.getElementById('meta-pixel-id').value.trim();
+        const accessToken = document.getElementById('meta-access-token').value.trim();
+        const capiActive = document.getElementById('meta-capi-active').checked;
+
+        localStorage.setItem('meta_pixel_id', pixelId);
+        localStorage.setItem('meta_access_token', accessToken);
+        localStorage.setItem('meta_capi_active', capiActive ? 'true' : 'false');
+
+        alert("✅ تم حفظ إعدادات ربط فيسبوك (Meta CAPI) بنجاح!");
+        closeSettingsModal();
+    }
+
+    // دالة التشفير SHA-256 للمتصفح (Web Crypto API) لحماية خصوصية بيانات العملاء طبقاً لشروط ميتا
+    async function sha256(message) {
+        const msgBuffer = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // إرسال حدث تحويل لفيسبوك (Meta CAPI) عبر بروكسي السيرفر
+    // التوكن لم يعد في المتصفح، ويتم تمرير اسم الحدث الصحيح (Lead / Schedule / Purchase)
+    function sendMetaConversionsEvent(lead, eventName) {
+        const isCapiActive = localStorage.getItem('meta_capi_active') !== 'false';
+        if (!isCapiActive) return;
+
+        const evtName = eventName || "Lead";
+        const leadData = { fullname: lead.fullname, phone: lead.phone };
+
+        if (isGoogleAppsScript) {
+            google.script.run.sendMetaEvent(evtName, leadData);
+        } else {
+            postToBackend({ action: "metaEvent", eventName: evtName, lead: leadData })
+                .catch(err => console.warn("فشل إرسال حدث ميتا عبر السيرفر:", err));
+        }
+    }
+
+    // ==================== وظائف الموبايل الجديدة (شريط التنقل السفلي والدرج السفلي) ====================
+
+    function toggleAppointmentInputs(visible) {
+        const group = document.getElementById('appointment-time-group');
+        if (group) group.style.display = visible ? 'flex' : 'none';
+    }
+
+    function switchMobileTab(tabId, el) {
+        document.querySelectorAll('.bottom-nav-item').forEach(item => item.classList.remove('active'));
+        if (el) el.classList.add('active');
+        switchTab(tabId);
+    }
+
+    function openSettingsModal() {
+        switchTab('settings');
+    }
+
+    function closeSettingsModal() {
+        // لم نعد نستخدم مودال الإعدادات، بل نستخدم التبويب
+    }
+
+    function loadSettingsFields() {
+        const pixelId = localStorage.getItem('meta_pixel_id') || '1710050566782840';
+        const accessToken = localStorage.getItem('meta_access_token') || '';
+        const capiActive = localStorage.getItem('meta_capi_active') !== 'false';
+        
+        const pxEl = document.getElementById('meta-pixel-id');
+        const tokEl = document.getElementById('meta-access-token');
+        const actEl = document.getElementById('meta-capi-active');
+        
+        if (pxEl) pxEl.value = pixelId;
+        if (tokEl) tokEl.value = accessToken;
+        if (actEl) actEl.checked = capiActive;
+    }
+
+    let currentSelectedLeadIndexForBs = null;
+    
+    function openLeadBottomSheet(index) {
+        currentSelectedLeadIndexForBs = index;
+        const lead = leads[index];
+        if (!lead) return;
+
+        // تعبئة البيانات في الدرج السفلي للموبايل
+        document.getElementById('bs-client-name').innerText = lead.fullname || '-';
+        document.getElementById('bs-client-phone').innerText = lead.phone || '-';
+        
+        const statusLabel = STATUS_LABELS[lead.status] || lead.status;
+        const statusBadge = document.getElementById('bs-client-status');
+        statusBadge.innerText = statusLabel;
+        statusBadge.className = 'badge ' + (STATUS_BADGES[lead.status] || 'badge-newlead');
+        
+        const apptGroup = document.getElementById('bs-client-appt-group');
+        const apptVal = document.getElementById('bs-client-appt');
+        if (lead.appointment_time && String(lead.appointment_time).trim() !== "" && String(lead.appointment_time).trim() !== "-") {
+            apptGroup.style.display = 'flex';
+            apptVal.innerText = formatAppointmentTimeArabic(lead.appointment_time);
+        } else {
+            apptGroup.style.display = 'none';
+        }
+        
+        document.getElementById('bs-client-notes').innerText = lead.notes || 'لا توجد ملاحظات حالياً.';
+
+        // تعيين أفعال أزرار الدرج السفلي
+        document.getElementById('bs-btn-edit').onclick = function() {
+            closeLeadBottomSheet();
+            openEditLeadModal(index);
+        };
+        
+        document.getElementById('bs-btn-delete').onclick = function() {
+            closeLeadBottomSheet();
+            deleteLead(index);
+        };
+
+        // تعبئة قوالب الواتساب السريعة التفاعلية
+        const templatesContainer = document.querySelector('.bs-templates-row');
+        templatesContainer.innerHTML = '';
+        
+        const phoneClean = String(lead.phone || "").replace(/[\+\s\-\(\)]/g, '');
+        const templates = [
+            { key: 'welcome', label: '🗣️ ترحيب' },
+            { key: 'followup', label: '🕒 متابعة' },
+            { key: 'appointment', label: '📅 موعد' },
+            { key: 'offer', label: '📄 العرض' }
+        ];
+
+        templates.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = 'bs-template-btn';
+            btn.innerText = t.label;
+            btn.onclick = function() {
+                sendWhatsAppTemplateDirectly(t.key, phoneClean, lead.fullname);
+            };
+            templatesContainer.appendChild(btn);
+        });
+
+        document.getElementById('mobile-bottom-sheet').classList.add('active');
+    }
+
+    function closeLeadBottomSheet() {
+        const bs = document.getElementById('mobile-bottom-sheet');
+        if (bs) bs.classList.remove('active');
+    }
+    
+    function sendWhatsAppTemplateDirectly(templateKey, phone, fullname, appointmentTime) {
+        const templates = {
+            welcome: localStorage.getItem('wa_tpl_welcome') || `أهلاً بك يا فندم {fullname}، تواصلنا معك بخصوص طلبك ونحن في خدمتك لتقديم كافة التفاصيل والرد على استفساراتك.`,
+            followup: localStorage.getItem('wa_tpl_followup') || `السلام عليكم يا فندم {fullname}، بنتابع مع حضرتك بخصوص العرض والتفاصيل السابقة التي ناقشناها. هل هناك أي استفسار يمكننا مساعدتك به؟`,
+            appointment: localStorage.getItem('wa_tpl_appointment') || `أهلاً بك يا فندم {fullname}، تذكير بموعدنا {appointment_time} إن شاء الله. يسعدنا تشريفك لنا وتواجدك في الموعد المحدد.`,
+            offer: localStorage.getItem('wa_tpl_offer') || `أهلاً بك يا فندم {fullname}، نرسل لحضرتك تفاصيل العرض والأسعار بخصوص استفسارك الكريم. يسعدنا تواصلك معنا.`
+        };
+        
+        let text = templates[templateKey] || "";
+        const formattedAppt = appointmentTime ? formatAppointmentTimeArabic(appointmentTime) : "في الموعد المحدد";
+        const todayStr = new Date().toLocaleDateString('ar-EG');
+
+        text = text.replace(/{fullname}/g, fullname || "");
+        text = text.replace(/{appointment_time}/g, formattedAppt);
+        text = text.replace(/{date}/g, todayStr);
+        
+        if (text) {
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+        }
+    }
+
+    function copyDailySummaryReport() {
+        if (!Array.isArray(leads)) return;
+
+        const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = ('0' + (now.getMonth() + 1)).slice(-2);
+        const day = ('0' + now.getDate()).slice(-2);
+        const todayStr = `${year}-${month}-${day}`;
+
+        const activeCount = validLeads.filter(l => l.status !== 'Not Interested' && l.status !== 'Ghosted').length;
+        const todayApptsCount = validLeads.filter(l => String(l.appointment_time || "").includes(todayStr) && l.status !== 'Lost' && l.status !== 'Not Interested').length;
+        const inProgressCount = validLeads.filter(l => l.status === 'In Progress' || l.status === 'Negotiating').length;
+        const wonCount = validLeads.filter(l => l.status === 'Won').length;
+
+        const reportText = `📊 *تقرير ملخص المبيعات اليومي - ليد فلو CRM*\n` +
+                           `📅 التعديل بتاريخ: ${day}/${month}/${year}\n` +
+                           `-----------------------------------\n` +
+                           `👥 إجمالي العملاء النشطين: ${activeCount}\n` +
+                           `🔥 مواعيد اليوم المجدولة: ${todayApptsCount}\n` +
+                           `⚡ عملاء قيد العمل والتنفيذ: ${inProgressCount}\n` +
+                           `🟢 الصفقات المغلقة (Won): ${wonCount}\n` +
+                           `-----------------------------------\n` +
+                           `🚀 تم استخراج التقرير تلقائياً من نظام LeadFlow CRM`;
+
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(reportText).then(() => {
+                alert("✅ تم نسخ تقرير اليوم بنجاح إلى الحافظة!\nيمكنك الآن لصقه ومشاركته مباشرة على واتساب أو تلجرام.");
+            }).catch(() => {
+                prompt("انسخ ملخص التقرير اليومي التالي:", reportText);
+            });
+        } else {
+            prompt("انسخ ملخص التقرير اليومي التالي:", reportText);
+        }
+    }
+
+    // ==================== وظائف تحسين التجربة الجديدة (UX & Performance Features) ====================
+
+    let currentChipFilter = 'all';
+
+    function checkTodayAppointmentsBanner() {
+        if (!Array.isArray(leads)) return;
+
+        const banner = document.getElementById('today-appointments-banner');
+        const textEl = document.getElementById('today-banner-text');
+        if (!banner || !textEl) return;
+
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = ('0' + (now.getMonth() + 1)).slice(-2);
+        const day = ('0' + now.getDate()).slice(-2);
+        const todayStr = `${year}-${month}-${day}`;
+
+        const todayLeads = leads.filter(l => {
+            const fullname = String(l.fullname || "").trim();
+            const phone = String(l.phone || "").trim();
+            if (fullname === "" && phone === "") return false;
+            
+            const appt = String(l.appointment_time || "").trim();
+            return appt.includes(todayStr) && l.status !== 'Lost' && l.status !== 'Not Interested';
+        });
+
+        if (todayLeads.length > 0) {
+            textEl.innerText = `لديك (${todayLeads.length}) مواعيد متابعة وحجز مجدولة اليوم (${day}/${month})!`;
+            banner.style.display = 'flex';
+        } else {
+            banner.style.display = 'none';
+        }
+    }
+
+    function filterByChip(chipType, el) {
+        currentChipFilter = chipType;
+
+        document.querySelectorAll('.chip-btn').forEach(btn => btn.classList.remove('active'));
+        if (el) {
+            el.classList.add('active');
+        } else {
+            // تفعيل الزر المطابق برمجياً
+            const targetBtn = Array.from(document.querySelectorAll('.chip-btn')).find(b => b.getAttribute('onclick').includes(chipType));
+            if (targetBtn) targetBtn.classList.add('active');
+        }
+
+        const filterSelect = document.getElementById('status-filter');
+
+        if (chipType === 'all') {
+            if (filterSelect) filterSelect.value = "";
+        } else if (chipType === 'today') {
+            if (filterSelect) filterSelect.value = "";
+        } else {
+            if (filterSelect && Array.from(filterSelect.options).some(opt => opt.value === chipType)) {
+                filterSelect.value = chipType;
+            }
+        }
+
+        resetLimitAndRender();
+    }
+
+    function exportLeadsToExcel() {
+        if (!Array.isArray(leads) || leads.length === 0) {
+            alert("لا توجد بيانات عملاء لتصديرها حالياً!");
+            return;
+        }
+
+        const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
+        const headers = ["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة", "تاريخ ووقت الموعد", "الملاحظات"];
+        
+        let csvContent = headers.join(",") + "\n";
+
+        validLeads.forEach(l => {
+            const statusLabel = STATUS_LABELS[l.status] || l.status || "";
+            const row = [
+                `"${(l.id || '').replace(/"/g, '""')}"`,
+                `"${(l.fullname || '').replace(/"/g, '""')}"`,
+                `"${(l.phone || '').replace(/"/g, '""')}"`,
+                `"${statusLabel.replace(/"/g, '""')}"`,
+                `"${(l.created_at || '').replace(/"/g, '""')}"`,
+                `"${(l.appointment_time || '').replace(/"/g, '""')}"`,
+                `"${(l.notes || '').replace(/"/g, '""')}"`
+            ];
+            csvContent += row.join(",") + "\n";
+        });
+
+        // إضافة UTF-8 BOM (\uFEFF) لفتح اللغة العربية بشكل نقي في Microsoft Excel
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10);
+        a.href = url;
+        a.download = `LeadFlow_Clients_${dateStr}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function appendTimestampToNotes(textareaId) {
+        const textarea = document.getElementById(textareaId);
+        if (!textarea) return;
+
+        const now = new Date();
+        const month = ('0' + (now.getMonth() + 1)).slice(-2);
+        const day = ('0' + now.getDate()).slice(-2);
+        let hours = now.getHours();
+        const minutes = ('0' + now.getMinutes()).slice(-2);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const timeStr = ('0' + hours).slice(-2);
+
+        const timestamp = `[${day}-${month} ${timeStr}:${minutes} ${ampm}]: `;
+
+        if (textarea.value.trim() === "") {
+            textarea.value = timestamp;
+        } else {
+            textarea.value = textarea.value.trim() + "\n" + timestamp;
+        }
+        
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+    }
+
+    function loadCustomWhatsAppTemplates() {
+        const tplWelcome = localStorage.getItem('wa_tpl_welcome') || "أهلاً بك يا فندم {fullname}، تواصلنا معك بخصوص طلبك ونحن في خدمتك لتقديم كافة التفاصيل والرد على استفساراتك.";
+        const tplFollowup = localStorage.getItem('wa_tpl_followup') || "السلام عليكم يا فندم {fullname}، بنتابع مع حضرتك بخصوص العرض والتفاصيل السابقة التي ناقشناها. هل هناك أي استفسار يمكننا مساعدتك به؟";
+        const tplAppointment = localStorage.getItem('wa_tpl_appointment') || "أهلاً بك يا فندم {fullname}، تذكير بموعدنا اليوم إن شاء الله. يسعدنا تشريفك لنا وتواجدك في الموعد المحدد.";
+        const tplOffer = localStorage.getItem('wa_tpl_offer') || "أهلاً بك يا فندم {fullname}، نرسل لحضرتك تفاصيل العرض والأسعار بخصوص استفسارك الكريم. يسعدنا تواصلك معنا.";
+
+        const elW = document.getElementById('wa-tpl-welcome');
+        const elF = document.getElementById('wa-tpl-followup');
+        const elA = document.getElementById('wa-tpl-appointment');
+        const elO = document.getElementById('wa-tpl-offer');
+
+        if (elW) elW.value = tplWelcome;
+        if (elF) elF.value = tplFollowup;
+        if (elA) elA.value = tplAppointment;
+        if (elO) elO.value = tplOffer;
+    }
+
+    function saveCustomWhatsAppTemplates(e) {
+        e.preventDefault();
+        const elW = document.getElementById('wa-tpl-welcome').value;
+        const elF = document.getElementById('wa-tpl-followup').value;
+        const elA = document.getElementById('wa-tpl-appointment').value;
+        const elO = document.getElementById('wa-tpl-offer').value;
+
+        localStorage.setItem('wa_tpl_welcome', elW);
+        localStorage.setItem('wa_tpl_followup', elF);
+        localStorage.setItem('wa_tpl_appointment', elA);
+        localStorage.setItem('wa_tpl_offer', elO);
+
+        alert("✅ تم حفظ قوالب الواتساب المخصصة بنجاح!");
+    }
+
+    // ==================== وظائف التصفية المتقدمة حسب الشهور (Monthly Filter System) ====================
+
+    const ARABIC_MONTH_NAMES = {
+        '01': 'يناير', '02': 'فبراير', '03': 'مارس', '04': 'إبريل',
+        '05': 'مايو', '06': 'يونيو', '07': 'يوليو', '08': 'أغسطس',
+        '09': 'سبتمبر', '10': 'أكتوبر', '11': 'نوفمبر', '12': 'ديسمبر'
+    };
+
+    function getLeadMonthYearKey(lead) {
+        let dateStr = lead.created_at || lead.appointment_time || "";
+        dateStr = String(dateStr).trim();
+        
+        if (dateStr.length >= 7 && dateStr.includes('-')) {
+            const parts = dateStr.split('-');
+            if (parts.length >= 2) {
+                const y = parseInt(parts[0], 10);
+                const m = parts[1].padStart(2, '0');
+                if (y >= 2020 && y <= 2035) {
+                    return `${y}-${m}`;
+                }
+            }
+        }
+        
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = ('0' + (now.getMonth() + 1)).slice(-2);
+        return `${y}-${m}`;
+    }
+
+    function populateMonthFilterDropdown() {
+        const monthSelect = document.getElementById('month-filter');
+        if (!monthSelect) return;
+
+        const currentValue = monthSelect.value;
+        const monthKeys = new Set();
+
+        const now = new Date();
+        const currentY = now.getFullYear();
+        const currentM = ('0' + (now.getMonth() + 1)).slice(-2);
+        const currentKey = `${currentY}-${currentM}`;
+        monthKeys.add(currentKey);
+
+        if (Array.isArray(leads)) {
+            leads.forEach(l => {
+                const fullname = String(l.fullname || "").trim();
+                const phone = String(l.phone || "").trim();
+                if (fullname !== "" || phone !== "") {
+                    const key = getLeadMonthYearKey(l);
+                    if (key && !key.startsWith("1970")) monthKeys.add(key);
+                }
+            });
+        }
+
+        const sortedKeys = Array.from(monthKeys).sort((a, b) => b.localeCompare(a));
+
+        let html = `<option value="">📅 كل الشهور (تاريخي)</option>`;
+
+        sortedKeys.forEach(key => {
+            const [y, m] = key.split('-');
+            const monthName = ARABIC_MONTH_NAMES[m] || m;
+            const isCurrent = (key === currentKey);
+            const label = `${monthName} ${y}${isCurrent ? ' (الحالي)' : ''}`;
+            html += `<option value="${key}">${label}</option>`;
+        });
+
+        monthSelect.innerHTML = html;
+
+        if (currentValue && Array.from(monthSelect.options).some(opt => opt.value === currentValue)) {
+            monthSelect.value = currentValue;
+        } else {
+            monthSelect.value = currentKey;
+        }
+    }
+
+    function onMonthFilterChange() {
+        calculateKPIs();
+        resetLimitAndRender();
+    }
+
+    function toggleClearSearchBtn() {
+        const searchInput = document.getElementById('lead-search');
+        const clearBtn = document.getElementById('clear-search-btn');
+        if (!searchInput || !clearBtn) return;
+        clearBtn.style.display = searchInput.value.trim() !== "" ? "block" : "none";
+    }
+
+    function clearSearchInput() {
+        const searchInput = document.getElementById('lead-search');
+        if (!searchInput) return;
+        searchInput.value = "";
+        toggleClearSearchBtn();
+        resetLimitAndRender();
+    }
+
+    // إظهار/إخفاء الدوك العائم حسب عدد المحدد
+    function updateBulkDock(checkedCount) {
+        const dock = document.getElementById('bulk-floating-dock');
+        const countText = document.getElementById('bulk-selected-count');
+        if (!dock) return;
+
+        if (checkedCount > 0) {
+            if (countText) countText.innerText = `تم تحديد (${checkedCount}) عملاء`;
+            dock.style.transform = 'translateX(-50%) translateY(0)';
+            dock.style.opacity = '1';
+            dock.style.pointerEvents = 'auto';
+        } else {
+            dock.style.transform = 'translateX(-50%) translateY(120px)';
+            dock.style.opacity = '0';
+            dock.style.pointerEvents = 'none';
+        }
+    }
+
+    // إلغاء كل التحديد (يستخدم نفس فئة الـ checkbox المعتمدة في الجدول)
+    function clearLeadSelection() {
+        const selectAll = document.getElementById('select-all-checkbox');
+        if (selectAll) selectAll.checked = false;
+        document.querySelectorAll('.lead-select-checkbox').forEach(cb => cb.checked = false);
+        updateBulkDock(0);
+    }
+
+    // تغيير الحالة الجماعي — يعتمد على data-id ويحفظ فعلياً في الباك-إند
+    function applyBulkStatusChange(selectEl) {
+        const newStatus = selectEl.value;
+        if (!newStatus) return;
+
+        const checked = Array.from(document.querySelectorAll('.lead-select-checkbox:checked'));
+        if (checked.length === 0) { selectEl.value = ""; return; }
+
+        if (!confirm(`هل أنت متأكد من تغيير حالة (${checked.length}) عملاء إلى (${newStatus})؟`)) {
+            selectEl.value = "";
+            return;
+        }
+
+        const leadIds = checked.map(cb => cb.getAttribute('data-id'));
+        const changedLeads = leads.filter(l => leadIds.indexOf(l.id) !== -1);
+
+        const applyResult = function(updatedLeads) {
+            leads = Array.isArray(updatedLeads) ? updatedLeads : leads;
+            localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+            calculateKPIs();
+            renderLeadsTable();
+            clearLeadSelection();
+            // إرسال أحداث ميتا الصحيحة حسب الحالة الجديدة
+            changedLeads.forEach(l => {
+                if (newStatus === 'Won') sendMetaConversionsEvent(l, "Purchase");
+                else if (newStatus === 'Appointment Booked') sendMetaConversionsEvent(l, "Schedule");
+            });
+            alert(`✅ تم تغيير حالة (${changedLeads.length}) عملاء بنجاح!`);
+        };
+
+        if (isGoogleAppsScript) {
+            google.script.run.withSuccessHandler(applyResult).updateStatusBulk(leadIds, newStatus);
+        } else {
+            postToBackend({ action: "updateStatusBulk", leadIds: leadIds, status: newStatus })
+                .then(applyResult)
+                .catch(err => {
+                    console.warn("فشل تغيير الحالة الجماعي عبر السيرفر، يتم التحديث محلياً:", err);
+                    changedLeads.forEach(l => { l.status = newStatus; });
+                    localStorage.setItem('meta_crm_leads_minimal', JSON.stringify(leads));
+                    calculateKPIs();
+                    renderLeadsTable();
+                    clearLeadSelection();
+                });
+        }
+
+        selectEl.value = "";
+    }
+
+</script>
+
+<!-- شريط التنقل السفلي للموبايل (Mobile Bottom Navigation Bar) -->
+<div class="bottom-nav">
+    <button class="bottom-nav-item active" onclick="switchMobileTab('leads', this)">
+        <i>👥</i>
+        <span>العملاء</span>
+    </button>
+    <button class="bottom-nav-item" onclick="switchMobileTab('charts', this)">
+        <i>📊</i>
+        <span>الإحصائيات</span>
+    </button>
+    <button class="bottom-nav-item btn-add-nav" onclick="openNewLeadModal()">
+        <i>＋</i>
+    </button>
+    <button class="bottom-nav-item" onclick="switchMobileTab('settings', this)">
+        <i>⚙</i>
+        <span>الإعدادات</span>
+    </button>
+</div>
+
+<!-- درُج التفاصيل السفلي للموبايل (Mobile Detail Bottom Sheet) -->
+<div id="mobile-bottom-sheet" class="bottom-sheet">
+    <div class="bottom-sheet-overlay" onclick="closeLeadBottomSheet()"></div>
+    <div class="bottom-sheet-content">
+        <div class="bottom-sheet-drag-handle"></div>
+        <div class="bottom-sheet-header">
+            <h2 id="bs-client-name">الاسم بالكامل</h2>
+            <button class="modal-close" onclick="closeLeadBottomSheet()">&times;</button>
+        </div>
+        <div class="bottom-sheet-body">
+            <div class="bs-info-item">
+                <span class="bs-label">📞 رقم الهاتف:</span>
+                <span id="bs-client-phone" class="bs-val" style="direction: ltr; font-weight: 700;">-</span>
+            </div>
+            <div class="bs-info-item">
+                <span class="bs-label">🏷️ الحالة الحالية:</span>
+                <span id="bs-client-status" class="badge">-</span>
+            </div>
+            <div class="bs-info-item" id="bs-client-appt-group">
+                <span class="bs-label">📅 الموعد المحجوز:</span>
+                <span id="bs-client-appt" class="bs-val" style="color: #ffc107; font-weight: 700;">-</span>
+            </div>
+            <div class="bs-info-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                <span class="bs-label">📝 الملاحظات وسجل المتابعة:</span>
+                <div id="bs-client-notes" class="bs-notes-box">-</div>
+            </div>
+            
+            <div class="bs-actions-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+                <button class="btn btn-secondary" id="bs-btn-edit" style="justify-content: center; font-size: 0.85rem; padding: 12px; height: auto;">✏️ تعديل</button>
+                <button class="btn btn-danger" id="bs-btn-delete" style="justify-content: center; background-color: #dc3545; color: white; border-color: #dc3545; font-size: 0.85rem; padding: 12px; height: auto;">🗑️ حذف</button>
+            </div>
+            
+            <div style="margin-top: 15px;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; display: block;">✍️ إرسال قالب سريع بالواتساب:</label>
+                <div class="bs-templates-row" style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch;">
+                    <!-- يتم ملء القوالب برمجياً -->
+                </div>
+            </div>
+        </div>
+    </div>
+<!-- Floating Bulk Action Dock (شريط العمليات الجماعية العائم) -->
+<div id="bulk-floating-dock" style="position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120px); z-index: 9999; background: rgba(18, 18, 18, 0.92); border: 1px solid rgba(255, 255, 255, 0.2); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); padding: 12px 24px; border-radius: 40px; display: flex; align-items: center; gap: 16px; box-shadow: 0 12px 35px rgba(0,0,0,0.6); transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease; opacity: 0; pointer-events: none;">
+    <span id="bulk-selected-count" style="font-weight: 800; font-size: 0.9rem; color: var(--text-primary); white-space: nowrap;">تم تحديد (0) عملاء</span>
+    
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <select id="bulk-status-select" onchange="applyBulkStatusChange(this)" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 20px; padding: 8px 12px; font-size: 0.8rem; font-family: var(--font-family); outline: none;">
+            <option value="">🏷️ تغيير الحالة الجماعي...</option>
+            <option value="New Lead">⚪ عميل جديد</option>
+            <option value="Contacted">🔵 تم الاتصال</option>
+            <option value="Follow Up Required">🟠 يحتاج متابعة</option>
+            <option value="Appointment Booked">📅 تم حجز موعد</option>
+            <option value="Proposal Sent">📄 تم إرسال العرض</option>
+            <option value="Negotiating">🟡 تفاوض</option>
+            <option value="In Progress">⚡ جاري العمل</option>
+            <option value="Won">🟢 تم البيع</option>
+            <option value="Lost">🔴 خسرنا الصفقة</option>
+            <option value="Ghosted">⚫ لم يرد (اختفى)</option>
+            <option value="Not Interested">❌ غير مهتم</option>
+        </select>
+        <button class="btn btn-danger" onclick="deleteSelectedLeads()" style="padding: 8px 14px; font-size: 0.8rem; border-radius: 20px; background-color: #dc3545; border-color: #dc3545; color: white;">🗑️ حذف المحدد</button>
+        <button class="btn btn-secondary" onclick="clearLeadSelection()" style="padding: 8px 12px; font-size: 0.8rem; border-radius: 20px;">✖️ إلغاء</button>
+    </div>
+</div>
+
+</body>
+</html>

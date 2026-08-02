@@ -1,0 +1,10 @@
+# Tooling / local skills (not part of the app)
+skills/
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+*.log
+
+# Temp
+*.tmp

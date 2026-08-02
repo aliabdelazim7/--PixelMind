@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Add Products</title>
+<style>
+  :root {
+    --blue: #007aff;
+    --blue-dark: #0062cc;
+    --bg: #ffffff;
+    --card: #f5f5f7;
+    --line: #e3e3e6;
+    --text: #1d1d1f;
+    --muted: #6e6e73;
+    --red: #d70015;
+    --green: #248a3d;
+    --radius: 16px;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+    font-size: 17px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Screens ------------------------------------------------------------- */
+
+  .screen { display: none; min-height: 100dvh; padding: 24px 20px calc(24px + env(safe-area-inset-bottom)); }
+  .screen.active { display: flex; flex-direction: column; }
+
+  .center { justify-content: center; align-items: center; text-align: center; }
+
+  .wrap { width: 100%; max-width: 420px; margin: 0 auto; }
+
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.02em; margin: 0 0 8px; }
+  .sub { color: var(--muted); font-size: 15px; margin: 0 0 28px; }
+
+  /* Controls ------------------------------------------------------------ */
+
+  label { display: block; font-size: 15px; font-weight: 600; margin: 0 0 6px; }
+  .opt { color: var(--muted); font-weight: 400; }
+
+  input, textarea {
+    width: 100%;
+    /* 16px minimum: anything smaller makes iOS Safari zoom on focus. */
+    font: inherit;
+    font-size: 17px;
+    color: var(--text);
+    background: var(--card);
+    border: 1px solid transparent;
+    border-radius: 12px;
+    padding: 14px 16px;
+    min-height: 52px;
+    transition: border-color .15s, background .15s;
+  }
+  textarea { min-height: 88px; resize: none; }
+
+  input:focus, textarea:focus {
+    outline: none;
+    background: #fff;
+    border-color: var(--blue);
+  }
+  input.bad, textarea.bad { border-color: var(--red); background: #fff5f5; }
+
+  .field { margin-bottom: 16px; text-align: left; }
+  .err { display: none; color: var(--red); font-size: 13px; margin-top: 6px; }
+  .err.show { display: block; }
+
+  button {
+    font: inherit;
+    font-size: 17px;
+    font-weight: 600;
+    border: 0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    min-height: 54px;
+    cursor: pointer;
+    width: 100%;
+    transition: transform .12s ease, background .15s, opacity .15s;
+  }
+  button:active:not(:disabled) { transform: scale(.975); }
+  button:disabled { opacity: .5; cursor: default; }
+
+  .primary { background: var(--blue); color: #fff; }
+  .primary:hover:not(:disabled) { background: var(--blue-dark); }
+  .secondary { background: var(--card); color: var(--text); }
+
+  .link {
+    background: none; border: 0; padding: 12px;
+    color: var(--muted); font-size: 15px; font-weight: 500;
+    text-decoration: underline; min-height: 44px; width: auto;
+  }
+
+  /* Connect screen ------------------------------------------------------ */
+
+  .hint {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    font-size: 14px;
+    color: var(--muted);
+    text-align: left;
+    margin-bottom: 22px;
+  }
+  .hint b { color: var(--text); font-weight: 600; }
+
+  /* Entry screen -------------------------------------------------------- */
+
+  .count { font-size: 15px; color: var(--muted); margin-top: 20px; min-height: 22px; }
+  .count b { color: var(--green); font-weight: 600; }
+  .sheet-name {
+    font-size: 14px; color: var(--muted);
+    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .add-icon { font-size: 21px; font-weight: 400; margin-inline-end: 6px; }
+
+  /* Modal --------------------------------------------------------------- */
+
+  .backdrop {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0,0,0,.35);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .backdrop.open { display: flex; }
+
+  .modal {
+    background: #fff;
+    width: 100%;
+    max-width: 460px;
+    max-height: 92dvh;
+    border-radius: 22px 22px 0 0;
+    display: flex;
+    flex-direction: column;
+    animation: slide .22s cubic-bezier(.32,.72,0,1);
+  }
+  @keyframes slide { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+  .modal-head {
+    padding: 20px 20px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 19px; font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .modal-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    flex: 1;
+  }
+
+  /* Sticky footer keeps Save reachable when the keyboard is open. */
+  .modal-foot {
+    padding: 14px 20px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: #fff;
+    display: flex; gap: 10px;
+    flex-shrink: 0;
+  }
+  .modal-foot button { flex: 1; }
+
+  /* Toast --------------------------------------------------------------- */
+
+  .toast {
+    position: fixed;
+    left: 50%; bottom: calc(28px + env(safe-area-inset-bottom));
+    transform: translate(-50%, 140%);
+    z-index: 90;
+    background: #1d1d1f; color: #fff;
+    padding: 14px 22px;
+    border-radius: 999px;
+    font-size: 15px; font-weight: 500;
+    box-shadow: var(--shadow);
+    max-width: calc(100vw - 32px);
+    text-align: center;
+    /* Hidden state must not rely on translate alone: the percentage is
+       relative to the toast's own height, and an empty toast is too short
+       to clear its bottom offset. */
+    opacity: 0;
+    visibility: hidden;
+    transition: transform .28s cubic-bezier(.32,.72,0,1), opacity .2s ease, visibility .28s;
+  }
+  .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
+  .toast.bad { background: var(--red); }
+
+  .spinner {
+    display: inline-block; width: 17px; height: 17px;
+    border: 2px solid rgba(255,255,255,.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    vertical-align: -3px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+
+  /* Desktop: center the modal instead of docking it to the bottom. */
+  @media (min-width: 600px) {
+    .backdrop { align-items: center; }
+    .modal { border-radius: 22px; max-height: 86dvh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Screen 1: Connect ---------------------------------------------------- -->
+<div class="screen center active" id="screen-connect">
+  <div class="wrap">
+    <h1>Add Products</h1>
+    <p class="sub">Connect your Google Sheet to get started.</p>
+
+    <div class="field">
+      <label for="sheet-url">Google Sheet link</label>
+      <input id="sheet-url" type="url" inputmode="url" autocomplete="off"
+             autocapitalize="off" spellcheck="false"
+             placeholder="https://docs.google.com/spreadsheets/...">
+      <div class="err" id="sheet-url-err"></div>
+    </div>
+
+    <div class="hint">
+      Open your sheet, tap <b>Share</b>, and set it to
+      <b>Anyone with the link &rarr; Editor</b>. Then paste the link above.
+    </div>
+
+    <button class="primary" id="connect-btn" onclick="connect()">Connect</button>
+  </div>
+</div>
+
+<!-- Screen 2: Product entry ---------------------------------------------- -->
+<div class="screen center" id="screen-entry">
+  <div class="wrap">
+    <h1>Add a product</h1>
+    <p class="sub sheet-name" id="sheet-label"></p>
+
+    <button class="primary" id="add-btn" onclick="openModal()">
+      <span class="add-icon">+</span>Add Product
+    </button>
+
+    <div class="count" id="session-count"></div>
+    <button class="link" onclick="changeSheet()">Use a different sheet</button>
+  </div>
+</div>
+
+<!-- Modal ---------------------------------------------------------------- -->
+<div class="backdrop" id="backdrop" onclick="backdropClick(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head" id="modal-title">New product</div>
+
+    <form class="modal-body" id="product-form" onsubmit="save(event)" novalidate>
+      <div class="field">
+        <label for="p-name">Product name</label>
+        <input id="p-name" autocomplete="off" enterkeyhint="next" placeholder="e.g. Blue T-Shirt">
+        <div class="err" id="p-name-err"></div>
+      </div>
+
+      <div class="field">
+        <label for="p-sku">SKU</label>
+        <input id="p-sku" autocomplete="off" autocapitalize="characters"
+               spellcheck="false" enterkeyhint="next" placeholder="e.g. TS-BLU-M">
+        <div class="err" id="p-sku-err"></div>
+      </div>
+
+      <div class="field">
+        <label for="p-price">Price</label>
+        <input id="p-price" type="number" inputmode="decimal" step="0.01" min="0"
+               enterkeyhint="next" placeholder="0.00">
+        <div class="err" id="p-price-err"></div>
+      </div>
+
+      <div class="field">
+        <label for="p-qty">Quantity</label>
+        <input id="p-qty" type="number" inputmode="numeric" step="1" min="0"
+               enterkeyhint="next" placeholder="0">
+        <div class="err" id="p-qty-err"></div>
+      </div>
+
+      <div class="field">
+        <label for="p-barcode">Barcode <span class="opt">(optional)</span></label>
+        <input id="p-barcode" inputmode="numeric" autocomplete="off" spellcheck="false">
+      </div>
+
+      <div class="field">
+        <label for="p-category">Category <span class="opt">(optional)</span></label>
+        <input id="p-category" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="p-desc">Description <span class="opt">(optional)</span></label>
+        <textarea id="p-desc" rows="3"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="p-image">Image URL <span class="opt">(optional)</span></label>
+        <input id="p-image" type="url" inputmode="url" autocomplete="off" spellcheck="false">
+      </div>
+
+      <!-- Lets the on-screen keyboard's Go/Done key submit the form. -->
+      <button type="submit" hidden aria-hidden="true"></button>
+    </form>
+
+    <div class="modal-foot">
+      <button type="button" class="secondary" id="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button type="button" class="primary" id="save-btn" onclick="save(event)">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* Paste the /exec URL of the deployed products.gs web app here. */
+const WEB_APP_URL = "";
+
+const STORE_KEY = "product_entry_sheet";
+const TIMEOUT_MS = 20000;
+
+let sheetUrl = "";
+let saving = false;
+let savedCount = 0;
+
+/* Every backend code maps to plain language. Raw errors never reach the user. */
+const MESSAGES = {
+  BAD_URL:        "That doesn't look like a Google Sheet link. Please check and try again.",
+  NO_ACCESS:      "We can't open that sheet. Make sure it's shared as \"Anyone with the link → Editor\".",
+  READ_ONLY:      "That sheet is view-only. Change sharing to \"Editor\" and try again.",
+  DUPLICATE_SKU:  "A product with that SKU already exists.",
+  MISSING_FIELDS: "Please fill in all the required fields.",
+  OFFLINE:        "You appear to be offline. Check your connection and try again.",
+  DEFAULT:        "Couldn't save the product. Please try again."
+};
+
+function message(code) {
+  return MESSAGES[code] || MESSAGES.DEFAULT;
+}
+
+/* Networking ------------------------------------------------------------ */
+
+async function callApi(payload) {
+  if (!navigator.onLine) return { ok: false, code: "OFFLINE" };
+  if (!WEB_APP_URL) return { ok: false, code: "DEFAULT" };
+
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), TIMEOUT_MS);
+
+  try {
+    const res = await fetch(WEB_APP_URL, {
+      method: "POST",
+      /* No custom headers: keeps this a CORS-simple request, which Apps
+         Script handles without a preflight. */
+      body: JSON.stringify(payload),
+      signal: abort.signal,
+      redirect: "follow"
+    });
+
+    if (!res.ok) return { ok: false, code: "DEFAULT" };
+
+    const data = await res.json();
+    /* Trust only an explicit ok:true. A malformed body is a failure, never
+       an empty success. */
+    if (!data || data.ok !== true) {
+      return { ok: false, code: (data && data.code) || "DEFAULT" };
+    }
+    return data;
+  } catch (err) {
+    console.error("API call failed:", err);
+    return { ok: false, code: "DEFAULT" };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/* Feedback -------------------------------------------------------------- */
+
+let toastTimer = null;
+function toast(text, isError) {
+  const el = document.getElementById("toast");
+  el.textContent = text;
+  el.classList.toggle("bad", !!isError);
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+function setBusy(btn, busy, idleLabel) {
+  btn.disabled = busy;
+  btn.innerHTML = busy ? '<span class="spinner"></span>' : idleLabel;
+}
+
+function fieldError(id, text) {
+  const input = document.getElementById(id);
+  const err = document.getElementById(id + "-err");
+  if (input) input.classList.toggle("bad", !!text);
+  if (err) {
+    err.textContent = text || "";
+    err.classList.toggle("show", !!text);
+  }
+}
+
+function clearFieldErrors() {
+  ["p-name", "p-sku", "p-price", "p-qty"].forEach(id => fieldError(id, ""));
+}
+
+/* Screens --------------------------------------------------------------- */
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+
+function updateCount() {
+  const el = document.getElementById("session-count");
+  el.innerHTML = savedCount
+    ? "<b>" + savedCount + "</b> added this session"
+    : "";
+}
+
+/* Connect --------------------------------------------------------------- */
+
+async function connect() {
+  const input = document.getElementById("sheet-url");
+  const btn = document.getElementById("connect-btn");
+  const url = input.value.trim();
+
+  fieldError("sheet-url", "");
+
+  if (!url) {
+    fieldError("sheet-url", "Please paste your Google Sheet link.");
+    input.focus();
+    return;
+  }
+  if (url.indexOf("/spreadsheets/d/") === -1) {
+    fieldError("sheet-url", message("BAD_URL"));
+    input.focus();
+    return;
+  }
+
+  setBusy(btn, true, "Connect");
+  const res = await callApi({ action: "validate", sheetUrl: url });
+  setBusy(btn, false, "Connect");
+
+  if (!res.ok) {
+    fieldError("sheet-url", message(res.code));
+    return;
+  }
+
+  sheetUrl = url;
+  localStorage.setItem(STORE_KEY, JSON.stringify({ url: url, name: res.name || "" }));
+  enterApp(res.name);
+}
+
+function enterApp(name) {
+  document.getElementById("sheet-label").textContent = name ? "Saving to " + name : "";
+  savedCount = 0;
+  updateCount();
+  showScreen("screen-entry");
+}
+
+function changeSheet() {
+  localStorage.removeItem(STORE_KEY);
+  sheetUrl = "";
+  document.getElementById("sheet-url").value = "";
+  fieldError("sheet-url", "");
+  showScreen("screen-connect");
+  document.getElementById("sheet-url").focus();
+}
+
+/* Modal ----------------------------------------------------------------- */
+
+const FIELDS = ["p-name", "p-sku", "p-price", "p-qty", "p-barcode", "p-category", "p-desc", "p-image"];
+
+function openModal() {
+  clearFieldErrors();
+  document.getElementById("backdrop").classList.add("open");
+  document.body.style.overflow = "hidden";
+  /* Delay focus until the slide-up settles, or iOS scrolls the sheet oddly. */
+  setTimeout(() => document.getElementById("p-name").focus(), 250);
+}
+
+function closeModal() {
+  if (saving) return;
+  document.getElementById("backdrop").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function backdropClick(e) {
+  if (e.target.id === "backdrop") closeModal();
+}
+
+function resetForm() {
+  FIELDS.forEach(id => { document.getElementById(id).value = ""; });
+  clearFieldErrors();
+}
+
+/* Save ------------------------------------------------------------------ */
+
+function validate() {
+  clearFieldErrors();
+  let firstBad = null;
+
+  const check = (id, text) => {
+    fieldError(id, text);
+    if (text && !firstBad) firstBad = id;
+  };
+
+  const name = document.getElementById("p-name").value.trim();
+  const sku = document.getElementById("p-sku").value.trim();
+  const price = document.getElementById("p-price").value.trim();
+  const qty = document.getElementById("p-qty").value.trim();
+
+  check("p-name", name ? "" : "Please enter a product name.");
+  check("p-sku", sku ? "" : "Please enter a SKU.");
+
+  if (!price) check("p-price", "Please enter a price.");
+  else if (isNaN(Number(price)) || Number(price) < 0) check("p-price", "Please enter a valid price.");
+
+  if (!qty) check("p-qty", "Please enter a quantity.");
+  else if (isNaN(Number(qty)) || Number(qty) < 0) check("p-qty", "Please enter a valid quantity.");
+
+  if (firstBad) {
+    const el = document.getElementById(firstBad);
+    el.focus();
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    return null;
+  }
+
+  return {
+    name: name,
+    sku: sku,
+    price: Number(price),
+    quantity: Number(qty),
+    barcode: document.getElementById("p-barcode").value.trim(),
+    category: document.getElementById("p-category").value.trim(),
+    description: document.getElementById("p-desc").value.trim(),
+    imageUrl: document.getElementById("p-image").value.trim()
+  };
+}
+
+async function save(e) {
+  if (e) e.preventDefault();
+  if (saving) return;
+
+  const product = validate();
+  if (!product) return;
+
+  const saveBtn = document.getElementById("save-btn");
+  const cancelBtn = document.getElementById("cancel-btn");
+
+  saving = true;
+  setBusy(saveBtn, true, "Save");
+  cancelBtn.disabled = true;
+
+  const res = await callApi({ action: "addProduct", sheetUrl: sheetUrl, product: product });
+
+  saving = false;
+  setBusy(saveBtn, false, "Save");
+  cancelBtn.disabled = false;
+
+  if (!res.ok) {
+    /* Keep the modal open on failure so the typed values aren't lost. */
+    if (res.code === "DUPLICATE_SKU") {
+      fieldError("p-sku", message(res.code));
+      document.getElementById("p-sku").focus();
+    } else {
+      toast(message(res.code), true);
+    }
+    return;
+  }
+
+  closeModal();
+  resetForm();
+  savedCount++;
+  updateCount();
+  toast("✅ Product added successfully.");
+}
+
+/* Boot ------------------------------------------------------------------ */
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") closeModal();
+});
+
+document.getElementById("sheet-url").addEventListener("keydown", e => {
+  if (e.key === "Enter") { e.preventDefault(); connect(); }
+});
+
+(function boot() {
+  let saved = null;
+  try {
+    saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null");
+  } catch (err) {
+    saved = null;
+  }
+
+  if (saved && saved.url) {
+    sheetUrl = saved.url;
+    enterApp(saved.name);
+  } else {
+    showScreen("screen-connect");
+  }
+})();
+</script>
+</body>
+</html>
