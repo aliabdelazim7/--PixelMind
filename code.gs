@@ -157,7 +157,11 @@ function getLeads() {
         status: row[3] || "",
         created_at: row[4] ? Utilities.formatDate(new Date(row[4]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
         appointment_time: appTimeVal,
-        notes: row[6] || ""
+        notes: row[6] || "",
+        sub_value: row[7] || "",
+        sub_start: row[8] ? Utilities.formatDate(new Date(row[8]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+        sub_end: row[9] ? Utilities.formatDate(new Date(row[9]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+        journey: row[10] || ""
       });
     }
     return leads;
@@ -191,6 +195,10 @@ function addOrUpdateLead(lead) {
     var phone = lead.phone || "";
     var status = lead.status || "";
     var appt = lead.appointment_time || "";
+    var cleanSubValue = sanitizeCell_(lead.sub_value || "");
+    var cleanSubStart = sanitizeCell_(lead.sub_start || "");
+    var cleanSubEnd = sanitizeCell_(lead.sub_end || "");
+    var cleanJourney = sanitizeCell_(lead.journey || "");
 
     // 1) تحديث بالمعرّف
     if (lead.id) {
@@ -201,6 +209,10 @@ function addOrUpdateLead(lead) {
         sheet.getRange(rowNum, 4).setValue(status);
         sheet.getRange(rowNum, 6).setValue(appt);
         sheet.getRange(rowNum, 7).setValue(cleanNotes);
+        sheet.getRange(rowNum, 8).setValue(cleanSubValue);
+        sheet.getRange(rowNum, 9).setValue(cleanSubStart);
+        sheet.getRange(rowNum, 10).setValue(cleanSubEnd);
+        sheet.getRange(rowNum, 11).setValue(cleanJourney);
         return getLeads();
       }
     }
@@ -215,6 +227,10 @@ function addOrUpdateLead(lead) {
         sheet.getRange(r, 4).setValue(status);
         sheet.getRange(r, 6).setValue(appt);
         sheet.getRange(r, 7).setValue(cleanNotes);
+        sheet.getRange(r, 8).setValue(cleanSubValue);
+        sheet.getRange(r, 9).setValue(cleanSubStart);
+        sheet.getRange(r, 10).setValue(cleanSubEnd);
+        sheet.getRange(r, 11).setValue(cleanJourney);
         return getLeads();
       }
     }
@@ -222,7 +238,8 @@ function addOrUpdateLead(lead) {
     // 3) إضافة صف جديد بمعرّف فريد
     var uniqueId = lead.id || genId_();
     var dateStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
-    sheet.appendRow([uniqueId, cleanName, phone, status, dateStr, appt, cleanNotes]);
+    sheet.appendRow([uniqueId, cleanName, phone, status, dateStr, appt, cleanNotes, cleanSubValue, cleanSubStart, cleanSubEnd, cleanJourney]);
+    return getLeads();
     return getLeads();
   } finally {
     lock.releaseLock();

@@ -1022,6 +1022,7 @@
         <div class="filter-chips-container" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; -webkit-overflow-scrolling: touch;">
             <button class="chip-btn active" onclick="filterByChip('all', this)">✨ الكل (النشطة)</button>
             <button class="chip-btn" onclick="filterByChip('today', this)">🔥 مواعيد اليوم</button>
+            <button class="chip-btn" onclick="filterByChip('renewals', this)">🔄 تجديدات قريبة</button>
             <button class="chip-btn" onclick="filterByChip('In Progress', this)">⚡ جاري العمل</button>
             <button class="chip-btn" onclick="filterByChip('Appointment Booked', this)">📅 تم حجز موعد</button>
             <button class="chip-btn" onclick="filterByChip('Won', this)">🟢 تم البيع</button>
@@ -1348,6 +1349,33 @@
                 <textarea id="lead-notes" rows="3" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none; text-align: right; resize: vertical;" placeholder="أضف ملاحظات المتابعة وتفاصيل العميل هنا..."></textarea>
             </div>
 
+            <!-- قسم الاشتراكات السنوية والإنهاءات -->
+            <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 15px;">
+                <h4 style="font-size: 0.85rem; color: #ffd700; margin-bottom: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px;">💎 بيانات الاشتراك السنوي والإنهاءات</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+                    <div class="form-group" style="margin: 0;">
+                        <label for="lead-sub-value" style="font-size: 0.75rem; color: var(--text-secondary);">قيمة الاشتراك (ج.م)</label>
+                        <input type="number" id="lead-sub-value" placeholder="مثال: 15000" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label for="lead-sub-start" style="font-size: 0.75rem; color: var(--text-secondary);">تاريخ بدء الاشتراك</label>
+                        <input type="date" id="lead-sub-start" onchange="autoCalculateSubEnd()" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                    </div>
+                    <div class="form-group" style="margin: 0;">
+                        <label for="lead-sub-end" style="font-size: 0.75rem; color: var(--text-secondary);">تاريخ الانتهاء والتجديد</label>
+                        <input type="date" id="lead-sub-end" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                    </div>
+                </div>
+            </div>
+
+            <!-- قسم الخط الزمني لرحلة العميل -->
+            <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 15px;">
+                <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px;">🗺️ سجل رحلة العميل الكاملة (Customer Journey)</h4>
+                <div id="modal-journey-timeline" style="display: flex; flex-direction: column; gap: 10px; padding-right: 12px; border-right: 2px solid var(--border-hover);">
+                    <!-- يتم تعبئته ديناميكياً -->
+                </div>
+            </div>
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeLeadModal()">إلغاء</button>
                 <button type="submit" class="btn">حفظ</button>
@@ -1637,6 +1665,25 @@
         const won = validLeads.filter(l => String(l.status || "") === 'Won').length;
         const active = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(String(l.status || ""))).length;
 
+        // حساب مبالغ الاشتراكات السنوية ARR والتجديدات القريبة
+        let totalARR = 0;
+        let expiringSoonCount = 0;
+        const nowMs = new Date().getTime();
+
+        validLeads.forEach(l => {
+            const val = parseFloat(l.sub_value || 0);
+            if (!isNaN(val) && val > 0 && l.status === 'Won') {
+                totalARR += val;
+            }
+            if (l.sub_end) {
+                const endMs = new Date(l.sub_end).getTime();
+                const diffDays = Math.ceil((endMs - nowMs) / (1000 * 60 * 60 * 24));
+                if (diffDays >= 0 && diffDays <= 30) {
+                    expiringSoonCount++;
+                }
+            }
+        });
+
         const target = 3;
         const targetProgress = Math.min(100, Math.round((won / target) * 100));
         const remaining = target - won;
@@ -1657,8 +1704,9 @@
                     <div class="kpi-value">${totalLeads}</div>
                 </div>
                 <div class="kpi-card">
-                    <div class="kpi-label">تحت المتابعة النشطة</div>
-                    <div class="kpi-value">${active}</div>
+                    <div class="kpi-label">💎 الإيرادات السنوية (ARR)</div>
+                    <div class="kpi-value">${totalARR.toLocaleString('ar-EG')} <span style="font-size: 0.8rem; color: var(--text-secondary);">ج.م</span></div>
+                    <div style="font-size: 0.72rem; color: #ffc107; font-weight: 700; margin-top: 4px;">🔄 ${expiringSoonCount} تجديدات قريبة (30 يوم)</div>
                 </div>
                 <div class="kpi-card" style="position: relative; overflow: hidden; display: flex; flex-direction: column; justify-content: space-between; text-align: right; padding: 16px 20px;">
                     <div>
@@ -1782,6 +1830,13 @@
                 const todayStr = `${year}-${month}-${day}`;
                 const appt = String(l.appointment_time || "").trim();
                 matchStatus = appt.includes(todayStr) && statusStr !== 'Lost' && statusStr !== 'Not Interested';
+            } else if (currentChipFilter === 'renewals') {
+                if (l.sub_end) {
+                    const diffDays = Math.ceil((new Date(l.sub_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                    matchStatus = (diffDays >= -10 && diffDays <= 45);
+                } else {
+                    matchStatus = false;
+                }
             } else {
                 matchStatus = statusFilter ? (statusStr === statusFilter) : (statusStr !== 'Not Interested' && statusStr !== 'Ghosted');
             }
@@ -1968,68 +2023,23 @@
         }
     }
 
-    function openNewLeadModal() {
-        document.getElementById('lead-modal-title').innerText = "إضافة عميل جديد";
-        document.getElementById('lead-form').reset();
-        document.getElementById('edit-lead-index').value = "";
-        document.getElementById('lead-notes').value = "";
-        
-        // إخفاء حقل الموعد وتحديد قيم اليوم الحالي تلقائياً
-        document.getElementById('lead-has-appointment').checked = false;
-        toggleAppointmentInputs(false);
-        const today = new Date();
-        document.getElementById('lead-appointment-month').value = String(today.getMonth() + 1);
-        document.getElementById('lead-appointment-day').value = String(today.getDate());
-        document.getElementById('lead-appointment-time-select').value = "12:00";
-        
-        document.getElementById('lead-modal').classList.add('active');
-    }
-
     function openEditLeadModal(index) {
-        const l = leads[index];
         document.getElementById('lead-modal-title').innerText = "تعديل حالة العميل";
-        document.getElementById('edit-lead-index').value = index;
-
-        document.getElementById('lead-fullname').value = l.fullname;
-        document.getElementById('lead-phone').value = l.phone;
-        document.getElementById('lead-status').value = l.status;
-
-        // التحقق من إظهار حقل الموعد وتوزيع البيانات على القوائم المنسدلة
-        const daySelect = document.getElementById('lead-appointment-day');
-        const monthSelect = document.getElementById('lead-appointment-month');
-        const timeSelect = document.getElementById('lead-appointment-time-select');
+        document.getElementById('lead-index').value = index;
         
-        if (l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-") {
-            document.getElementById('lead-has-appointment').checked = true;
-            toggleAppointmentInputs(true);
-            const parts = (l.appointment_time || '').split(' ');
-            const appDate = parts[0] || '';
-            const rawTime = parts[1] || '12:00';
-            
-            // تنظيف الوقت من الثواني (مثل 12:30:00 إلى 12:30) لتتطابق مع خيارات القائمة المنسدلة
-            const timeParts = rawTime.split(':');
-            const appTime = timeParts.slice(0, 2).join(':');
-            
-            const dateParts = appDate.split('-');
-            if (dateParts.length >= 3) {
-                monthSelect.value = String(parseInt(dateParts[1]));
-                daySelect.value = String(parseInt(dateParts[2]));
-            } else {
-                const today = new Date();
-                monthSelect.value = String(today.getMonth() + 1);
-                daySelect.value = String(today.getDate());
-            }
-            timeSelect.value = appTime;
-        } else {
-            document.getElementById('lead-has-appointment').checked = false;
-            toggleAppointmentInputs(false);
-            const today = new Date();
-            monthSelect.value = String(today.getMonth() + 1);
-            daySelect.value = String(today.getDate());
-            timeSelect.value = '12:00';
-        }
-
+        const l = leads[index];
+        document.getElementById('lead-fullname').value = l.fullname || "";
+        document.getElementById('lead-phone').value = l.phone || "";
+        document.getElementById('lead-status').value = l.status || "New Lead";
         document.getElementById('lead-notes').value = l.notes || "";
+        
+        document.getElementById('lead-sub-value').value = l.sub_value || "";
+        document.getElementById('lead-sub-start').value = l.sub_start || "";
+        document.getElementById('lead-sub-end').value = l.sub_end || "";
+
+        parseAppointmentToModalSelects(l.appointment_time);
+        renderCustomerJourneyTimeline(l, 'modal-journey-timeline');
+
         document.getElementById('lead-modal').classList.add('active');
     }
 
@@ -2039,7 +2049,7 @@
 
     function saveLead(e) {
         e.preventDefault();
-        const indexStr = document.getElementById('edit-lead-index').value;
+        const indexStr = document.getElementById('lead-index').value;
         
         const submitBtn = e.target.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -2047,32 +2057,17 @@
             submitBtn.innerText = "⏳ جاري الحفظ...";
         }
 
-        const rawFullname = document.getElementById('lead-fullname').value;
-        const rawPhone = document.getElementById('lead-phone').value;
         const cleanStatus = sanitize(document.getElementById('lead-status').value);
-        const rawAppDay = document.getElementById('lead-appointment-day').value;
-        const rawAppMonth = document.getElementById('lead-appointment-month').value;
-        const rawAppTime = document.getElementById('lead-appointment-time-select').value;
-        const cleanNotes = sanitize(document.getElementById('lead-notes').value);
         
-        const cleanFullname = sanitize(rawFullname);
-        const cleanPhone = normalizePhone(rawPhone);
-        
-        const now = new Date();
-        let apptYear = now.getFullYear();
-        // لو الشهر المختار أقدم من الشهر الحالي، نفترض السنة القادمة (حجز مطلع العام الجديد)
-        if (parseInt(rawAppMonth) < (now.getMonth() + 1)) apptYear = apptYear + 1;
-        const formattedMonth = ('0' + rawAppMonth).slice(-2);
-        const formattedDay = ('0' + rawAppDay).slice(-2);
-        const hasAppt = document.getElementById('lead-has-appointment').checked;
-        const cleanAppTime = hasAppt ? `${apptYear}-${formattedMonth}-${formattedDay} ${rawAppTime}` : '';
-
         const newLead = {
-            fullname: cleanFullname,
-            phone: cleanPhone,
+            fullname: document.getElementById('lead-fullname').value.trim(),
+            phone: document.getElementById('lead-phone').value.trim(),
             status: cleanStatus,
-            appointment_time: cleanAppTime,
-            notes: cleanNotes
+            notes: document.getElementById('lead-notes').value.trim(),
+            appointment_time: buildAppointmentFromModalSelects(),
+            sub_value: document.getElementById('lead-sub-value').value.trim(),
+            sub_start: document.getElementById('lead-sub-start').value.trim(),
+            sub_end: document.getElementById('lead-sub-end').value.trim()
         };
 
         const isNewLead = (indexStr === "");
@@ -2303,6 +2298,9 @@
         const wonCount = validLeads.filter(l => l.status === 'Won').length;
         const activeCount = validLeads.filter(l => !['Won', 'Lost', 'Not Interested'].includes(l.status)).length;
         
+        // حساب ARR: جمع القيم المالية المحددة في حقل sub_value
+        const arrTotal = validLeads.reduce((sum, l) => sum + (parseFloat(l.sub_value) || 0), 0);
+        
         const conversionRate = totalCount > 0 ? Math.round((wonCount / totalCount) * 100) : 0;
         
         const convRateEl = document.getElementById('v-conversion-rate');
@@ -2342,6 +2340,10 @@
             const activePct = totalCount > 0 ? Math.round((activeCount / totalCount) * 100) : 0;
             activeProgEl.style.width = activePct + '%';
         }
+        
+        // تحديث عنصر ARR إذا كان موجوداً
+        const arrEl = document.getElementById('v-arr-value');
+        if (arrEl) arrEl.innerText = arrTotal.toLocaleString('ar-EG');
 
         // 2. تعبئة قمع مراحل البيع البصري (Visual Pipeline Bars)
         const pipelineStages = [
@@ -3351,6 +3353,97 @@
         selectEl.value = "";
     }
 
+    function autoCalculateSubEnd() {
+        const startInput = document.getElementById('lead-sub-start');
+        const endInput = document.getElementById('lead-sub-end');
+        if (!startInput || !endInput || !startInput.value) return;
+
+        const startDate = new Date(startInput.value);
+        if (isNaN(startDate.getTime())) return;
+        startDate.setFullYear(startDate.getFullYear() + 1);
+        const y = startDate.getFullYear();
+        const m = ('0' + (startDate.getMonth() + 1)).slice(-2);
+        const d = ('0' + startDate.getDate()).slice(-2);
+        endInput.value = `${y}-${m}-${d}`;
+    }
+
+    function renderCustomerJourneyTimeline(lead, containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const milestones = [];
+
+        // 1. إنشاء العميل
+        const createdDate = (lead.created_at && !lead.created_at.startsWith('1970')) ? lead.created_at : 'تاريخ التسجيل';
+        milestones.push({
+            icon: '⚪',
+            title: 'تسجيل العميل في المنظومة',
+            detail: `التاريخ: ${createdDate}`
+        });
+
+        // 2. التواصل الأول
+        if (lead.status && lead.status !== 'New Lead') {
+            milestones.push({
+                icon: '🔵',
+                title: 'تواصل ومراسلة المبيعات',
+                detail: 'تم الاتصال والتأكيد المبدئي'
+            });
+        }
+
+        // 3. حجز الموعد
+        if (lead.appointment_time) {
+            const formattedAppt = formatAppointmentTimeArabic(lead.appointment_time);
+            milestones.push({
+                icon: '📅',
+                title: 'تحديد وحجز موعد المتابعة',
+                detail: formattedAppt
+            });
+        }
+
+        // 4. إغلاق الصفقة بالنجاح (Won)
+        if (lead.status === 'Won') {
+            milestones.push({
+                icon: '🟢',
+                title: 'إغلاق الصفقة بنجاح (Won)',
+                detail: lead.sub_start ? `بدء الخدمة: ${lead.sub_start}` : 'صفقة مكتملة'
+            });
+
+            // 5. الاشتراك السنوي وتنبيه التجديد
+            const subValStr = lead.sub_value ? `${parseFloat(lead.sub_value).toLocaleString('ar-EG')} ج.م` : 'اشتراك سنوي';
+            let renewalText = lead.sub_end ? `موعد التجديد: ${lead.sub_end}` : 'اشتراك مفعل';
+            
+            if (lead.sub_end) {
+                const diffDays = Math.ceil((new Date(lead.sub_end).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                if (diffDays < 0) {
+                    renewalText += ` (🔴 منتهي منذ ${Math.abs(diffDays)} يوم)`;
+                } else if (diffDays <= 30) {
+                    renewalText += ` (⚠️ تجديد قريب خلال ${diffDays} يوم)`;
+                } else {
+                    renewalText += ` (🟢 نشط - متبقي ${diffDays} يوم)`;
+                }
+            }
+
+            milestones.push({
+                icon: '💎',
+                title: `تفعيل الاشتراك السنوي (${subValStr})`,
+                detail: renewalText
+            });
+        }
+
+        let html = '';
+        milestones.forEach(m => {
+            html += `
+                <div style="position: relative; padding-right: 18px; font-size: 0.8rem;">
+                    <div style="position: absolute; right: -17px; top: 1px; font-size: 0.85rem;">${m.icon}</div>
+                    <div style="font-weight: 700; color: var(--text-primary);">${m.title}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">${m.detail}</div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+    }
+
 </script>
 
 <!-- شريط التنقل السفلي للموبايل (Mobile Bottom Navigation Bar) -->
@@ -3394,9 +3487,19 @@
                 <span class="bs-label">📅 الموعد المحجوز:</span>
                 <span id="bs-client-appt" class="bs-val" style="color: #ffc107; font-weight: 700;">-</span>
             </div>
+            <div id="bs-client-sub-group" class="bs-info-item" style="display: none; flex-direction: column; align-items: flex-start; gap: 4px; background: rgba(255, 215, 0, 0.05); padding: 10px; border-radius: 6px; border: 1px solid rgba(255, 215, 0, 0.2);">
+                <span class="bs-label" style="color: #ffd700;">💎 الاشتراك السنوي والإنهاء:</span>
+                <span id="bs-client-sub-val" class="bs-val" style="font-weight: 700;">-</span>
+            </div>
             <div class="bs-info-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
                 <span class="bs-label">📝 الملاحظات وسجل المتابعة:</span>
                 <div id="bs-client-notes" class="bs-notes-box">-</div>
+            </div>
+            <div style="margin-top: 15px; background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+                <label style="font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 10px; display: block;">🗺️ سجل رحلة العميل (Customer Journey):</label>
+                <div id="bs-journey-timeline" style="display: flex; flex-direction: column; gap: 10px; padding-right: 10px; border-right: 2px solid var(--border-hover);">
+                    <!-- يتم التعبئة ديناميكياً -->
+                </div>
             </div>
             
             <div class="bs-actions-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 20px; border-top: 1px solid var(--border-color); padding-top: 15px;">
