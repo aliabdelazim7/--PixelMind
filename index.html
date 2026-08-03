@@ -2027,19 +2027,84 @@
         }
     }
 
+    function parseAppointmentToModalSelects(apptStr) {
+        const daySelect = document.getElementById('lead-appointment-day');
+        const monthSelect = document.getElementById('lead-appointment-month');
+        const timeSelect = document.getElementById('lead-appointment-time-select');
+        
+        if (!daySelect || !monthSelect || !timeSelect) return;
+        
+        daySelect.value = "";
+        monthSelect.value = "";
+        timeSelect.value = "12:00";
+
+        if (!apptStr || typeof apptStr !== 'string') return;
+        
+        try {
+            const cleanStr = apptStr.trim().replace('T', ' ');
+            const parts = cleanStr.split(' ');
+            if (parts.length >= 1) {
+                const dateParts = parts[0].split('-');
+                if (dateParts.length >= 3) {
+                    const m = parseInt(dateParts[1], 10);
+                    const d = parseInt(dateParts[2], 10);
+                    if (!isNaN(d)) daySelect.value = String(d);
+                    if (!isNaN(m)) monthSelect.value = String(m);
+                }
+            }
+            if (parts.length >= 2) {
+                const timeParts = parts[1].split(':');
+                if (timeParts.length >= 2) {
+                    const hh = timeParts[0].padStart(2, '0');
+                    const mm = timeParts[1].padStart(2, '0');
+                    timeSelect.value = `${hh}:${mm}`;
+                }
+            }
+        } catch(e) {
+            console.warn("Could not parse appointment time:", apptStr);
+        }
+    }
+
+    function buildAppointmentFromModalSelects() {
+        const daySelect = document.getElementById('lead-appointment-day');
+        const monthSelect = document.getElementById('lead-appointment-month');
+        const timeSelect = document.getElementById('lead-appointment-time-select');
+
+        const day = daySelect ? daySelect.value : "";
+        const month = monthSelect ? monthSelect.value : "";
+        const time = timeSelect ? timeSelect.value : "12:00";
+
+        if (!day || !month) return "";
+
+        const year = new Date().getFullYear();
+        const mStr = month.padStart(2, '0');
+        const dStr = day.padStart(2, '0');
+        return `${year}-${mStr}-${dStr} ${time}`;
+    }
+
     function openEditLeadModal(index) {
         document.getElementById('lead-modal-title').innerText = "تعديل حالة العميل";
         document.getElementById('lead-index').value = index;
         
         const l = leads[index];
+        if (!l) {
+            console.error("Lead not found at index:", index);
+            return;
+        }
+
         document.getElementById('lead-fullname').value = l.fullname || "";
         document.getElementById('lead-phone').value = l.phone || "";
         document.getElementById('lead-status').value = l.status || "New Lead";
         document.getElementById('lead-notes').value = l.notes || "";
         
-        document.getElementById('lead-sub-value').value = l.sub_value || "";
-        document.getElementById('lead-sub-start').value = l.sub_start || "";
-        document.getElementById('lead-sub-end').value = l.sub_end || "";
+        const subVal = document.getElementById('lead-sub-value');
+        if (subVal) subVal.value = l.sub_value || "";
+
+        const subStart = document.getElementById('lead-sub-start');
+        if (subStart) subStart.value = l.sub_start || "";
+
+        const subEnd = document.getElementById('lead-sub-end');
+        if (subEnd) subEnd.value = l.sub_end || "";
 
         parseAppointmentToModalSelects(l.appointment_time);
         renderCustomerJourneyTimeline(l, 'modal-journey-timeline');
