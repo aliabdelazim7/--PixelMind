@@ -1994,10 +1994,14 @@
                                     <option value="followup">🕒 متابعة</option>
                                     <option value="appointment">📅 موعد</option>
                                     <option value="offer">📄 عرض</option>
+                                    <option value="renewal">🔄 تجديد</option>
                                 </select>
                             </div>
                         </td>
-                        <td data-label="الحالة"><span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span></td>
+                        <td data-label="الحالة">
+                            <span class="badge ${STATUS_BADGES[statusStr] || 'badge-newlead'}">${statusLabel}</span>
+                            ${l.sub_value ? `<div style="margin-top: 4px; font-size: 0.72rem; color: #ffd700; font-weight: 800;" title="اشتراك سنوي بقيمة ${l.sub_value} ج.م">💎 ${parseFloat(l.sub_value).toLocaleString('ar-EG')} ج.م</div>` : ''}
+                        </td>
                         <td data-label="ميعاد الحجز" style="font-weight: 700; color: #ffc107;">${appointmentTimeDisplay}</td>
                         <td data-label="تاريخ الإضافة">${createdAtStr}</td>
                         <td data-label="الإجراءات">
@@ -3095,7 +3099,7 @@
         }
 
         const validLeads = leads.filter(l => String(l.fullname || "").trim() !== "" || String(l.phone || "").trim() !== "");
-        const headers = ["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة", "تاريخ ووقت الموعد", "الملاحظات"];
+        const headers = ["المعرف", "الاسم بالكامل", "رقم الهاتف", "الحالة", "تاريخ الإضافة", "تاريخ ووقت الموعد", "قيمة الاشتراك (ج.م)", "بدء الاشتراك", "تاريخ التجديد والانتهاء", "الملاحظات"];
         
         let csvContent = headers.join(",") + "\n";
 
@@ -3108,6 +3112,9 @@
                 `"${statusLabel.replace(/"/g, '""')}"`,
                 `"${(l.created_at || '').replace(/"/g, '""')}"`,
                 `"${(l.appointment_time || '').replace(/"/g, '""')}"`,
+                `"${(l.sub_value || '').replace(/"/g, '""')}"`,
+                `"${(l.sub_start || '').replace(/"/g, '""')}"`,
+                `"${(l.sub_end || '').replace(/"/g, '""')}"`,
                 `"${(l.notes || '').replace(/"/g, '""')}"`
             ];
             csvContent += row.join(",") + "\n";
