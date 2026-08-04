@@ -2082,6 +2082,34 @@
         return `${year}-${mStr}-${dStr} ${time}`;
     }
 
+    function openNewLeadModal() {
+        document.getElementById('lead-modal-title').innerText = "+ إضافة عميل جديد";
+        document.getElementById('lead-index').value = "";
+        
+        document.getElementById('lead-fullname').value = "";
+        document.getElementById('lead-phone').value = "";
+        document.getElementById('lead-status').value = "New Lead";
+        document.getElementById('lead-notes').value = "";
+        
+        const subVal = document.getElementById('lead-sub-value');
+        if (subVal) subVal.value = "";
+
+        const subStart = document.getElementById('lead-sub-start');
+        if (subStart) subStart.value = "";
+
+        const subEnd = document.getElementById('lead-sub-end');
+        if (subEnd) subEnd.value = "";
+
+        parseAppointmentToModalSelects("");
+        
+        const journeyContainer = document.getElementById('modal-journey-timeline');
+        if (journeyContainer) {
+            journeyContainer.innerHTML = '<div style="font-size: 0.78rem; color: var(--text-secondary); padding: 4px 0;">سيتم بدء سجل رحلة العميل فور حفظ بياناته.</div>';
+        }
+
+        document.getElementById('lead-modal').classList.add('active');
+    }
+
     function openEditLeadModal(index) {
         document.getElementById('lead-modal-title').innerText = "تعديل حالة العميل";
         document.getElementById('lead-index').value = index;
