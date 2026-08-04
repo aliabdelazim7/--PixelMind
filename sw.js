@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leadflow-cache-v6-root-cause-fix';
+const CACHE_NAME = 'leadflow-cache-v7-rock-solid-pass';
 const ASSETS = [
   './',
   './index.html',
