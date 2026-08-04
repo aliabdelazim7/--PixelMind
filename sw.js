@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leadflow-cache-v5-force-refresh';
+const CACHE_NAME = 'leadflow-cache-v6-root-cause-fix';
 const ASSETS = [
   './',
   './index.html',

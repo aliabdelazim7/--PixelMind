@@ -1426,7 +1426,7 @@
 
     const DEFAULT_LEADS = [];
 
-    let leads = [];
+    var leads = [];
 
     // خريطة ألوان الحالات لتظليل جانب الكروت المدمجة في الشبكة
     const STATUS_COLORS = {
@@ -1886,34 +1886,6 @@
             const isHotLead = (statusStr === 'Appointment Booked' || statusStr === 'In Progress' || statusStr === 'Negotiating' || (l.appointment_time && String(l.appointment_time).includes(nowStr)));
             const hotBadgeHtml = isHotLead ? '<span style="background: rgba(255, 87, 34, 0.15); color: #ff5722; border: 1px solid rgba(255, 87, 34, 0.3); font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; margin-right: 4px;" title="عميل عالي الأولوية">🔥 عالي الأولوية</span>' : '';
 
-            function formatAppointmentTimeArabic(apptStr) {
-                if (!apptStr) return "";
-                try {
-                    const cleanStr = apptStr.replace('T', ' ');
-                    const parts = cleanStr.split(' ');
-                    if (parts.length < 2) return apptStr;
-                    
-                    const dateParts = parts[0].split('-');
-                    const timeParts = parts[1].split(':');
-                    
-                    if (dateParts.length < 3 || timeParts.length < 2) return apptStr;
-                    
-                    const month = parseInt(dateParts[1]);
-                    const day = parseInt(dateParts[2]);
-                    
-                    let hour = parseInt(timeParts[0]);
-                    const minute = timeParts[1];
-                    
-                    const ampm = hour >= 12 ? 'م' : 'ص';
-                    hour = hour % 12;
-                    if (hour === 0) hour = 12;
-                    
-                    return `${day}/${month} (${hour}:${minute} ${ampm})`;
-                } catch(e) {
-                    return apptStr;
-                }
-            }
-
             let statusLabel = STATUS_LABELS[statusStr] || statusStr;
             let appointmentTimeDisplay = '-';
             if (l.appointment_time && String(l.appointment_time).trim() !== "" && String(l.appointment_time).trim() !== "-") {
@@ -2035,6 +2007,34 @@
         }
     }
 
+    function formatAppointmentTimeArabic(apptStr) {
+        if (!apptStr) return "";
+        try {
+            const cleanStr = String(apptStr).replace('T', ' ');
+            const parts = cleanStr.split(' ');
+            if (parts.length < 2) return apptStr;
+            
+            const dateParts = parts[0].split('-');
+            const timeParts = parts[1].split(':');
+            
+            if (dateParts.length < 3 || timeParts.length < 2) return apptStr;
+            
+            const month = parseInt(dateParts[1], 10);
+            const day = parseInt(dateParts[2], 10);
+            
+            let hour = parseInt(timeParts[0], 10);
+            const minute = timeParts[1];
+            
+            const ampm = hour >= 12 ? 'م' : 'ص';
+            hour = hour % 12;
+            if (hour === 0) hour = 12;
+            
+            return `${day}/${month} (${hour}:${minute} ${ampm})`;
+        } catch(e) {
+            return apptStr;
+        }
+    }
+
     function parseAppointmentToModalSelects(apptStr) {
         const daySelect = document.getElementById('lead-appointment-day');
         const monthSelect = document.getElementById('lead-appointment-month');
@@ -2088,6 +2088,16 @@
         const mStr = month.padStart(2, '0');
         const dStr = day.padStart(2, '0');
         return `${year}-${mStr}-${dStr} ${time}`;
+    }
+
+    function getElementValue(id) {
+        const el = document.getElementById(id);
+        return el ? el.value : "";
+    }
+
+    function setElementValue(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
     }
 
     function openNewLeadModal() {
