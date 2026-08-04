@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leadflow-cache-v3';
+const CACHE_NAME = 'leadflow-cache-v5-force-refresh';
 const ASSETS = [
   './',
   './index.html',
@@ -11,14 +11,15 @@ const ASSETS = [
 
 // حدث التثبيت (Install Event): تخزين الملفات الثابتة في الكاش
 self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       return cache.addAll(ASSETS);
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
-// حدث التفعيل (Activate Event): حذف الكاش القديم
+// حدث التفعيل (Activate Event): حذف جميع الكاشات القديمة
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => {
