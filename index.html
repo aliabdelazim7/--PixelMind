@@ -1222,7 +1222,7 @@
             <button class="modal-close" onclick="closeLeadModal()">&times;</button>
         </div>
         <form id="lead-form" onsubmit="saveLead(event)">
-            <input type="hidden" id="edit-lead-index">
+            <input type="hidden" id="lead-index">
             
             <div class="form-group">
                 <label for="lead-fullname">اسم العميل بالكامل *</label>
@@ -2091,22 +2091,19 @@
     }
 
     function openNewLeadModal() {
-        document.getElementById('lead-modal-title').innerText = "+ إضافة عميل جديد";
-        document.getElementById('lead-index').value = "";
+        const titleEl = document.getElementById('lead-modal-title');
+        if (titleEl) titleEl.innerText = "+ إضافة عميل جديد";
         
-        document.getElementById('lead-fullname').value = "";
-        document.getElementById('lead-phone').value = "";
-        document.getElementById('lead-status').value = "New Lead";
-        document.getElementById('lead-notes').value = "";
+        const indexEl = document.getElementById('lead-index') || document.getElementById('edit-lead-index');
+        if (indexEl) indexEl.value = "";
         
-        const subVal = document.getElementById('lead-sub-value');
-        if (subVal) subVal.value = "";
-
-        const subStart = document.getElementById('lead-sub-start');
-        if (subStart) subStart.value = "";
-
-        const subEnd = document.getElementById('lead-sub-end');
-        if (subEnd) subEnd.value = "";
+        setElementValue('lead-fullname', '');
+        setElementValue('lead-phone', '');
+        setElementValue('lead-status', 'New Lead');
+        setElementValue('lead-notes', '');
+        setElementValue('lead-sub-value', '');
+        setElementValue('lead-sub-start', '');
+        setElementValue('lead-sub-end', '');
 
         parseAppointmentToModalSelects("");
         
@@ -2115,12 +2112,16 @@
             journeyContainer.innerHTML = '<div style="font-size: 0.78rem; color: var(--text-secondary); padding: 4px 0;">سيتم بدء سجل رحلة العميل فور حفظ بياناته.</div>';
         }
 
-        document.getElementById('lead-modal').classList.add('active');
+        const modal = document.getElementById('lead-modal');
+        if (modal) modal.classList.add('active');
     }
 
     function openEditLeadModal(index) {
-        document.getElementById('lead-modal-title').innerText = "تعديل حالة العميل";
-        document.getElementById('lead-index').value = index;
+        const titleEl = document.getElementById('lead-modal-title');
+        if (titleEl) titleEl.innerText = "تعديل حالة العميل";
+        
+        const indexEl = document.getElementById('lead-index') || document.getElementById('edit-lead-index');
+        if (indexEl) indexEl.value = index;
         
         const l = leads[index];
         if (!l) {
@@ -2128,33 +2129,30 @@
             return;
         }
 
-        document.getElementById('lead-fullname').value = l.fullname || "";
-        document.getElementById('lead-phone').value = l.phone || "";
-        document.getElementById('lead-status').value = l.status || "New Lead";
-        document.getElementById('lead-notes').value = l.notes || "";
-        
-        const subVal = document.getElementById('lead-sub-value');
-        if (subVal) subVal.value = l.sub_value || "";
-
-        const subStart = document.getElementById('lead-sub-start');
-        if (subStart) subStart.value = l.sub_start || "";
-
-        const subEnd = document.getElementById('lead-sub-end');
-        if (subEnd) subEnd.value = l.sub_end || "";
+        setElementValue('lead-fullname', l.fullname || '');
+        setElementValue('lead-phone', l.phone || '');
+        setElementValue('lead-status', l.status || 'New Lead');
+        setElementValue('lead-notes', l.notes || '');
+        setElementValue('lead-sub-value', l.sub_value || '');
+        setElementValue('lead-sub-start', l.sub_start || '');
+        setElementValue('lead-sub-end', l.sub_end || '');
 
         parseAppointmentToModalSelects(l.appointment_time);
         renderCustomerJourneyTimeline(l, 'modal-journey-timeline');
 
-        document.getElementById('lead-modal').classList.add('active');
+        const modal = document.getElementById('lead-modal');
+        if (modal) modal.classList.add('active');
     }
 
     function closeLeadModal() {
-        document.getElementById('lead-modal').classList.remove('active');
+        const modal = document.getElementById('lead-modal');
+        if (modal) modal.classList.remove('active');
     }
 
     function saveLead(e) {
         e.preventDefault();
-        const indexStr = document.getElementById('lead-index').value;
+        const indexEl = document.getElementById('lead-index') || document.getElementById('edit-lead-index');
+        const indexStr = indexEl ? indexEl.value : "";
         
         const submitBtn = e.target.querySelector('button[type="submit"]');
         if (submitBtn) {
@@ -2162,17 +2160,17 @@
             submitBtn.innerText = "⏳ جاري الحفظ...";
         }
 
-        const cleanStatus = sanitize(document.getElementById('lead-status').value);
+        const cleanStatus = sanitize(getElementValue('lead-status'));
         
         const newLead = {
-            fullname: document.getElementById('lead-fullname').value.trim(),
-            phone: document.getElementById('lead-phone').value.trim(),
+            fullname: getElementValue('lead-fullname').trim(),
+            phone: getElementValue('lead-phone').trim(),
             status: cleanStatus,
-            notes: document.getElementById('lead-notes').value.trim(),
+            notes: getElementValue('lead-notes').trim(),
             appointment_time: buildAppointmentFromModalSelects(),
-            sub_value: document.getElementById('lead-sub-value').value.trim(),
-            sub_start: document.getElementById('lead-sub-start').value.trim(),
-            sub_end: document.getElementById('lead-sub-end').value.trim()
+            sub_value: getElementValue('lead-sub-value').trim(),
+            sub_start: getElementValue('lead-sub-start').trim(),
+            sub_end: getElementValue('lead-sub-end').trim()
         };
 
         const isNewLead = (indexStr === "");
