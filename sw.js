@@ -1,4 +1,4 @@
-const CACHE_NAME = 'leadflow-cache-v7-rock-solid-pass';
+const CACHE_NAME = 'leadflow-cache-v8-sticky-footer-dynamic-responsive';
 const ASSETS = [
   './',
   './index.html',

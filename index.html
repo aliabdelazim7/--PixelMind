@@ -372,17 +372,37 @@
             backdrop-filter: blur(4px);
         }
 
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(6px);
+            padding: 12px;
+        }
+
         .modal-overlay.active {
             display: flex;
         }
 
         .modal {
             background-color: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            width: 90%;
-            max-width: 500px;
-            padding: 24px;
+            border: 1px solid var(--border-hover);
+            border-radius: 12px;
+            width: 96%;
+            max-width: 560px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
         }
 
         .modal-header {
@@ -390,28 +410,75 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            padding: 16px 20px;
+            background-color: var(--bg-card);
+            flex-shrink: 0;
         }
 
         .modal-title {
             font-size: 1.15rem;
-            font-weight: 700;
+            font-weight: 800;
+            color: var(--text-primary);
         }
 
         .modal-close {
-            background: none;
-            border: none;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
             color: var(--text-secondary);
-            font-size: 1.6rem;
+            font-size: 1.4rem;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(220, 53, 69, 0.2);
+            color: #ff5252;
+            border-color: rgba(220, 53, 69, 0.3);
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+            border-top: 1px solid var(--border-color);
+            padding: 14px 20px;
+            background-color: var(--bg-card);
+            flex-shrink: 0;
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
         }
 
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 6px;
-            margin-bottom: 16px;
+            margin-bottom: 4px;
         }
 
         label {
@@ -420,30 +487,23 @@
             font-weight: 600;
         }
 
-        input, select {
+        input, select, textarea {
             background-color: var(--bg-primary);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
             padding: 10px 14px;
-            border-radius: 4px;
+            border-radius: 6px;
             font-size: 0.95rem;
             font-family: var(--font-family);
             outline: none;
             text-align: right;
             width: 100%;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             border-color: var(--border-hover);
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 15px;
-            margin-top: 15px;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.15);
         }
 
         /* Charts Layout */
@@ -1221,172 +1281,174 @@
             <div class="modal-title" id="lead-modal-title">إضافة عميل جديد</div>
             <button class="modal-close" onclick="closeLeadModal()">&times;</button>
         </div>
-        <form id="lead-form" onsubmit="saveLead(event)">
-            <input type="hidden" id="lead-index">
-            
-            <div class="form-group">
-                <label for="lead-fullname">اسم العميل بالكامل *</label>
-                <input type="text" id="lead-fullname" required placeholder="أحمد محمد">
-            </div>
-            
-            <div class="form-group">
-                <label for="lead-phone">رقم الهاتف *</label>
-                <input type="tel" id="lead-phone" required placeholder="201012345678+">
-            </div>
-            
-            <div class="form-group">
-                <label for="lead-status">حالة العميل</label>
-                <select id="lead-status">
-                    <option value="New Lead">⚪ عميل جديد</option>
-                    <option value="Contacted">🔵 تم الاتصال</option>
-                    <option value="Follow Up Required">🟠 يحتاج متابعة</option>
-                    <option value="Appointment Booked">📅 تم حجز موعد</option>
-                    <option value="Proposal Sent">📄 تم إرسال العرض</option>
-                    <option value="Negotiating">🟡 تفاوض</option>
-                    <option value="In Progress">⚡ جاري العمل</option>
-                    <option value="Won">🟢 تم البيع</option>
-                    <option value="Lost">🔴 خسرنا الصفقة</option>
-                    <option value="Ghosted">⚫ لم يرد (اختفى)</option>
-                    <option value="Not Interested">❌ غير مهتم</option>
-                </select>
-            </div>
-
-            <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 5px; margin-bottom: 12px; direction: rtl; justify-content: flex-start;">
-                <input type="checkbox" id="lead-has-appointment" onchange="toggleAppointmentInputs(this.checked)" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
-                <label for="lead-has-appointment" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">📅 تحديد موعد حجز / متابعة للعميل</label>
-            </div>
-
-            <div class="form-group" id="appointment-time-group" style="display: none; gap: 8px; flex-direction: row; align-items: flex-end;">
-                <div style="flex: 1;">
-                    <label for="lead-appointment-day">اليوم</label>
-                    <select id="lead-appointment-day" style="text-align: right; direction: rtl;">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
-                        <option value="5">5</option>
-                        <option value="6">6</option>
-                        <option value="7">7</option>
-                        <option value="8">8</option>
-                        <option value="9">9</option>
-                        <option value="10">10</option>
-                        <option value="11">11</option>
-                        <option value="12">12</option>
-                        <option value="13">13</option>
-                        <option value="14">14</option>
-                        <option value="15">15</option>
-                        <option value="16">16</option>
-                        <option value="17">17</option>
-                        <option value="18">18</option>
-                        <option value="19">19</option>
-                        <option value="20">20</option>
-                        <option value="21">21</option>
-                        <option value="22">22</option>
-                        <option value="23">23</option>
-                        <option value="24">24</option>
-                        <option value="25">25</option>
-                        <option value="26">26</option>
-                        <option value="27">27</option>
-                        <option value="28">28</option>
-                        <option value="29">29</option>
-                        <option value="30">30</option>
-                        <option value="31">31</option>
+        <form id="lead-form" onsubmit="saveLead(event)" style="display: flex; flex-direction: column; height: 100%; overflow: hidden; margin: 0;">
+            <div class="modal-body">
+                <input type="hidden" id="lead-index">
+                
+                <div class="form-group">
+                    <label for="lead-fullname">اسم العميل بالكامل *</label>
+                    <input type="text" id="lead-fullname" required placeholder="أحمد محمد">
+                </div>
+                
+                <div class="form-group">
+                    <label for="lead-phone">رقم الهاتف *</label>
+                    <input type="tel" id="lead-phone" required placeholder="201012345678+">
+                </div>
+                
+                <div class="form-group">
+                    <label for="lead-status">حالة العميل</label>
+                    <select id="lead-status">
+                        <option value="New Lead">⚪ عميل جديد</option>
+                        <option value="Contacted">🔵 تم الاتصال</option>
+                        <option value="Follow Up Required">🟠 يحتاج متابعة</option>
+                        <option value="Appointment Booked">📅 تم حجز موعد</option>
+                        <option value="Proposal Sent">📄 تم إرسال العرض</option>
+                        <option value="Negotiating">🟡 تفاوض</option>
+                        <option value="In Progress">⚡ جاري العمل</option>
+                        <option value="Won">🟢 تم البيع</option>
+                        <option value="Lost">🔴 خسرنا الصفقة</option>
+                        <option value="Ghosted">⚫ لم يرد (اختفى)</option>
+                        <option value="Not Interested">❌ غير مهتم</option>
                     </select>
                 </div>
-                <div style="flex: 1;">
-                    <label for="lead-appointment-month">الشهر</label>
-                    <select id="lead-appointment-month" style="text-align: right; direction: rtl;">
-                        <option value="1">1 - يناير</option>
-                        <option value="2">2 - فبراير</option>
-                        <option value="3">3 - مارس</option>
-                        <option value="4">4 - إبريل</option>
-                        <option value="5">5 - مايو</option>
-                        <option value="6">6 - يونيو</option>
-                        <option value="7">7 - يوليو</option>
-                        <option value="8">8 - أغسطس</option>
-                        <option value="9">9 - سبتمبر</option>
-                        <option value="10">10 - أكتوبر</option>
-                        <option value="11">11 - نوفمبر</option>
-                        <option value="12">12 - ديسمبر</option>
-                    </select>
-                </div>
-                <div style="width: 120px;">
-                    <label for="lead-appointment-time-select">الوقت</label>
-                    <select id="lead-appointment-time-select" style="text-align: right; direction: rtl;">
-                        <option value="08:00">08:00 ص</option>
-                        <option value="08:30">08:30 ص</option>
-                        <option value="09:00">09:00 ص</option>
-                        <option value="09:30">09:30 ص</option>
-                        <option value="10:00">10:00 ص</option>
-                        <option value="10:30">10:30 ص</option>
-                        <option value="11:00">11:00 ص</option>
-                        <option value="11:30">11:30 ص</option>
-                        <option value="12:00">12:00 م</option>
-                        <option value="12:30">12:30 م</option>
-                        <option value="13:00">01:00 م</option>
-                        <option value="13:30">01:30 م</option>
-                        <option value="14:00">02:00 م</option>
-                        <option value="14:30">02:30 م</option>
-                        <option value="15:00">03:00 م</option>
-                        <option value="15:30">03:30 م</option>
-                        <option value="16:00">04:00 م</option>
-                        <option value="16:30">04:30 م</option>
-                        <option value="17:00">05:00 م</option>
-                        <option value="17:30">05:30 م</option>
-                        <option value="18:00">06:00 م</option>
-                        <option value="18:30">06:30 م</option>
-                        <option value="19:00">07:00 م</option>
-                        <option value="19:30">07:30 م</option>
-                        <option value="20:00">08:00 م</option>
-                        <option value="20:30">08:30 م</option>
-                        <option value="21:00">09:00 م</option>
-                        <option value="21:30">09:30 م</option>
-                        <option value="22:00">10:00 م</option>
-                        <option value="22:30">10:30 م</option>
-                        <option value="23:00">11:00 م</option>
-                        <option value="23:30">11:30 م</option>
-                    </select>
-                </div>
-            </div>
 
-            <div class="form-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label for="lead-notes" style="margin: 0;">📝 الملاحظات وسجل المتابعة</label>
-                    <button type="button" onclick="appendTimestampToNotes('lead-notes')" style="font-size: 0.75rem; color: #ffc107; background: none; border: none; cursor: pointer; padding: 0; font-weight: 700; font-family: var(--font-family);" title="إدراج تاريخ ووقت المكالمة تلقائياً">➕ إضافة طابع زمني</button>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: 5px; margin-bottom: 8px; direction: rtl; justify-content: flex-start;">
+                    <input type="checkbox" id="lead-has-appointment" onchange="toggleAppointmentInputs(this.checked)" style="width: 18px; height: 18px; cursor: pointer; margin: 0;">
+                    <label for="lead-has-appointment" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.85rem; color: var(--text-primary);">📅 تحديد موعد حجز / متابعة للعميل</label>
                 </div>
-                <textarea id="lead-notes" rows="3" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none; text-align: right; resize: vertical;" placeholder="أضف ملاحظات المتابعة وتفاصيل العميل هنا..."></textarea>
-            </div>
 
-            <!-- قسم الاشتراكات السنوية والإنهاءات -->
-            <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 15px;">
-                <h4 style="font-size: 0.85rem; color: #ffd700; margin-bottom: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px;">💎 بيانات الاشتراك السنوي والإنهاءات</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
-                    <div class="form-group" style="margin: 0;">
-                        <label for="lead-sub-value" style="font-size: 0.75rem; color: var(--text-secondary);">قيمة الاشتراك (ج.م)</label>
-                        <input type="number" id="lead-sub-value" placeholder="مثال: 15000" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                <div class="form-group" id="appointment-time-group" style="display: none; gap: 8px; flex-direction: row; align-items: flex-end;">
+                    <div style="flex: 1;">
+                        <label for="lead-appointment-day">اليوم</label>
+                        <select id="lead-appointment-day" style="text-align: right; direction: rtl;">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                            <option value="11">11</option>
+                            <option value="12">12</option>
+                            <option value="13">13</option>
+                            <option value="14">14</option>
+                            <option value="15">15</option>
+                            <option value="16">16</option>
+                            <option value="17">17</option>
+                            <option value="18">18</option>
+                            <option value="19">19</option>
+                            <option value="20">20</option>
+                            <option value="21">21</option>
+                            <option value="22">22</option>
+                            <option value="23">23</option>
+                            <option value="24">24</option>
+                            <option value="25">25</option>
+                            <option value="26">26</option>
+                            <option value="27">27</option>
+                            <option value="28">28</option>
+                            <option value="29">29</option>
+                            <option value="30">30</option>
+                            <option value="31">31</option>
+                        </select>
                     </div>
-                    <div class="form-group" style="margin: 0;">
-                        <label for="lead-sub-start" style="font-size: 0.75rem; color: var(--text-secondary);">تاريخ بدء الاشتراك</label>
-                        <input type="date" id="lead-sub-start" onchange="autoCalculateSubEnd()" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                    <div style="flex: 1;">
+                        <label for="lead-appointment-month">الشهر</label>
+                        <select id="lead-appointment-month" style="text-align: right; direction: rtl;">
+                            <option value="1">1 - يناير</option>
+                            <option value="2">2 - فبراير</option>
+                            <option value="3">3 - مارس</option>
+                            <option value="4">4 - إبريل</option>
+                            <option value="5">5 - مايو</option>
+                            <option value="6">6 - يونيو</option>
+                            <option value="7">7 - يوليو</option>
+                            <option value="8">8 - أغسطس</option>
+                            <option value="9">9 - سبتمبر</option>
+                            <option value="10">10 - أكتوبر</option>
+                            <option value="11">11 - نوفمبر</option>
+                            <option value="12">12 - ديسمبر</option>
+                        </select>
                     </div>
-                    <div class="form-group" style="margin: 0;">
-                        <label for="lead-sub-end" style="font-size: 0.75rem; color: var(--text-secondary);">تاريخ الانتهاء والتجديد</label>
-                        <input type="date" id="lead-sub-end" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                    <div style="width: 120px;">
+                        <label for="lead-appointment-time-select">الوقت</label>
+                        <select id="lead-appointment-time-select" style="text-align: right; direction: rtl;">
+                            <option value="08:00">08:00 ص</option>
+                            <option value="08:30">08:30 ص</option>
+                            <option value="09:00">09:00 ص</option>
+                            <option value="09:30">09:30 ص</option>
+                            <option value="10:00">10:00 ص</option>
+                            <option value="10:30">10:30 ص</option>
+                            <option value="11:00">11:00 ص</option>
+                            <option value="11:30">11:30 ص</option>
+                            <option value="12:00">12:00 م</option>
+                            <option value="12:30">12:30 م</option>
+                            <option value="13:00">01:00 م</option>
+                            <option value="13:30">01:30 م</option>
+                            <option value="14:00">02:00 م</option>
+                            <option value="14:30">02:30 م</option>
+                            <option value="15:00">03:00 م</option>
+                            <option value="15:30">03:30 م</option>
+                            <option value="16:00">04:00 م</option>
+                            <option value="16:30">04:30 م</option>
+                            <option value="17:00">05:00 م</option>
+                            <option value="17:30">05:30 م</option>
+                            <option value="18:00">06:00 م</option>
+                            <option value="18:30">06:30 م</option>
+                            <option value="19:00">07:00 م</option>
+                            <option value="19:30">07:30 م</option>
+                            <option value="20:00">08:00 م</option>
+                            <option value="20:30">08:30 م</option>
+                            <option value="21:00">09:00 م</option>
+                            <option value="21:30">09:30 م</option>
+                            <option value="22:00">10:00 م</option>
+                            <option value="22:30">10:30 م</option>
+                            <option value="23:00">11:00 م</option>
+                            <option value="23:30">11:30 م</option>
+                        </select>
                     </div>
                 </div>
-            </div>
 
-            <!-- قسم الخط الزمني لرحلة العميل -->
-            <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; margin-bottom: 15px;">
-                <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px;">🗺️ سجل رحلة العميل الكاملة (Customer Journey)</h4>
-                <div id="modal-journey-timeline" style="display: flex; flex-direction: column; gap: 10px; padding-right: 12px; border-right: 2px solid var(--border-hover);">
-                    <!-- يتم تعبئته ديناميكياً -->
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label for="lead-notes" style="margin: 0;">📝 الملاحظات وسجل المتابعة</label>
+                        <button type="button" onclick="appendTimestampToNotes('lead-notes')" style="font-size: 0.75rem; color: #ffc107; background: none; border: none; cursor: pointer; padding: 0; font-weight: 700; font-family: var(--font-family);" title="إدراج تاريخ ووقت المكالمة تلقائياً">➕ إضافة طابع زمني</button>
+                    </div>
+                    <textarea id="lead-notes" rows="3" style="width: 100%; padding: 10px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none; text-align: right; resize: vertical;" placeholder="أضف ملاحظات المتابعة وتفاصيل العميل هنا..."></textarea>
+                </div>
+
+                <!-- قسم الاشتراكات السنوية والإنهاءات -->
+                <div style="background: rgba(255, 215, 0, 0.05); border: 1px solid rgba(255, 215, 0, 0.2); border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+                    <h4 style="font-size: 0.85rem; color: #ffd700; margin-bottom: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px;">💎 بيانات الاشتراك السنوي والإنهاءات</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px;">
+                        <div class="form-group" style="margin: 0;">
+                            <label for="lead-sub-value" style="font-size: 0.75rem; color: var(--text-secondary);">قيمة الاشتراك (ج.م)</label>
+                            <input type="number" id="lead-sub-value" placeholder="مثال: 15000" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label for="lead-sub-start" style="font-size: 0.75rem; color: var(--text-secondary);">تاريخ بدء الاشتراك</label>
+                            <input type="date" id="lead-sub-start" onchange="autoCalculateSubEnd()" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                        </div>
+                        <div class="form-group" style="margin: 0;">
+                            <label for="lead-sub-end" style="font-size: 0.75rem; color: var(--text-secondary);">تاريخ الانتهاء والتجديد</label>
+                            <input type="date" id="lead-sub-end" style="width: 100%; padding: 8px; background-color: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; font-family: var(--font-family); outline: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- قسم الخط الزمني لرحلة العميل -->
+                <div style="background-color: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+                    <h4 style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 12px; font-weight: 800; display: flex; align-items: center; gap: 6px;">🗺️ سجل رحلة العميل الكاملة (Customer Journey)</h4>
+                    <div id="modal-journey-timeline" style="display: flex; flex-direction: column; gap: 10px; padding-right: 12px; border-right: 2px solid var(--border-hover);">
+                        <!-- يتم تعبئته ديناميكياً -->
+                    </div>
                 </div>
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeLeadModal()">إلغاء</button>
-                <button type="submit" class="btn">حفظ</button>
+                <button type="button" class="btn btn-secondary" onclick="closeLeadModal()" style="padding: 10px 18px; font-size: 0.9rem;">إلغاء</button>
+                <button type="submit" class="btn" style="min-width: 120px; font-weight: 800; padding: 10px 20px; font-size: 0.95rem;">💾 حفظ البيانات</button>
             </div>
         </form>
     </div>
